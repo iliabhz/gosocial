@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/iliabhz/tiago-backend/internal/store"
+	"github.com/iliabhz/gosocial/internal/store"
 )
 
 type application struct {

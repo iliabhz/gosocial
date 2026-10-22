@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 
-	"github.com/iliabhz/tiago-backend/internal/env"
-	"github.com/iliabhz/tiago-backend/internal/store/postgres"
+	"github.com/iliabhz/gosocial/internal/env"
+	"github.com/iliabhz/gosocial/internal/store/postgres"
 	"github.com/joho/godotenv"
 )
 

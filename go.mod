@@ -1,4 +1,4 @@
-module github.com/iliabhz/tiago-backend
+module github.com/iliabhz/gosocial
 
 go 1.27.1
 

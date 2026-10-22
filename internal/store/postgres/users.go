@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/iliabhz/tiago-backend/internal/store"
+	"github.com/iliabhz/gosocial/internal/store"
 )
 
 type PostgresUserRepository struct {
