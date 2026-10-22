@@ -1,0 +1,37 @@
+version: "3"
+
+dotenv: [".env"]
+
+vars:
+  MIGRATIONS_PATH: ./cmd/migrate/migrations
+
+tasks:
+  default:
+    desc: Run the air program for hot realoding
+    cmds:
+      - air
+    silent: true
+
+  test:
+    desc: Run the go test suite
+    cmds:
+      - go test -v ./...
+
+  migration:*:
+    desc: Create a sql migration
+    cmds:
+      - migrate create -seq -ext sql -dir "{{.MIGRATIONS_PATH}}" "{{index .MATCH 0}}"
+
+  migrate-up:
+    desc: Migrate up the sql schema
+    cmds:
+      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_ADDR" up
+
+  migrate-down:*:
+    desc: Migrate down the sql schema
+    cmds:
+      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_ADDR" down "{{index .MATCH 0}}"
+
+  seed: go run cmd/migrate/seed/main.go
+
+  gen-docs: swag init -g ./api/main.go -d cmd,internal && swag fmt
