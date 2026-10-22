@@ -7,15 +7,18 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/iliabhz/tiago-backend/internal/store"
 )
 
 type application struct {
 	config *config
+	store  store.Storage
 }
 
-func newApplication(cfg *config) *application {
+func newApplication(cfg *config, store store.Storage) *application {
 	return &application{
 		config: cfg,
+		store:  store,
 	}
 }
 
