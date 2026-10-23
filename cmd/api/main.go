@@ -4,8 +4,6 @@ import (
 	"log"
 
 	"github.com/iliabhz/gosocial/internal/db"
-	"github.com/iliabhz/gosocial/internal/env"
-	"github.com/iliabhz/gosocial/internal/store/postgres"
 	"github.com/joho/godotenv"
 )
 
@@ -15,16 +13,19 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	appCfg := newAppConfig(env.GetString("ADDR", ":8080"))
-	db, err := db.New(env.GetString("DB_DSN", "postgres://admin:adminpass@localhost/gosocial?sslmode=disable&pool_max_conns=30&pool_max_conn_idle_time=15m"))
+	appCfg := newAppConfig()
+	initAppConfig(appCfg)
+	dbCfg := newDBConfig()
+	initDBConfig(dbCfg)
+
+	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
-		log.Fatalf("Failed to initialize database: %v", err)
+		log.Fatal(err)
 	}
-	defer db.Close()
+
+	defer store.Close()
 
 	log.Println("Database connection pool established")
-
-	store := postgres.NewPostgresStorage(db)
 
 	app := newApplication(store)
 
