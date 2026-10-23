@@ -10,25 +10,22 @@ import (
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatalf("Error loading .env file: %v", err)
 	}
 
 	appCfg := newAppConfig()
-	initAppConfig(appCfg)
 	dbCfg := newDBConfig()
-	initDBConfig(dbCfg)
 
 	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	defer store.Close()
 
 	log.Println("Database connection pool established")
 
 	app := newApplication(store)
 
-	mux := app.mount()
-	log.Fatal(app.run(appCfg, mux))
+	app.mount()
+	log.Fatal(app.run(appCfg))
 }

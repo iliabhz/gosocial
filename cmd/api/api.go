@@ -11,6 +11,7 @@ import (
 )
 
 type application struct {
+	mux   http.Handler
 	store store.Storage
 }
 
@@ -20,7 +21,7 @@ func newApplication(store store.Storage) *application {
 	}
 }
 
-func (app *application) mount() http.Handler {
+func (app *application) mount() {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -37,13 +38,13 @@ func (app *application) mount() http.Handler {
 		r.Get("/health", app.healthCheckHandler)
 	})
 
-	return r
+	app.mux = r
 }
 
-func (app *application) run(cfg *appConfig, mux http.Handler) error {
+func (app *application) run(cfg *appConfig) error {
 	srv := &http.Server{
 		Addr:         cfg.addr,
-		Handler:      mux,
+		Handler:      app.mux,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
