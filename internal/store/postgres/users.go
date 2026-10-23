@@ -18,5 +18,21 @@ func newPostgresUserRepository(db *sql.DB) *PostgresUserRepository {
 }
 
 func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User) error {
-	return nil
+	query := `
+	INSERT INTO users (username, password, email)
+	 VALUES ($1, $2, $3) RETURNING id, created_at
+	`
+
+	err := repo.db.QueryRowContext(
+		ctx,
+		query,
+		user.Username,
+		user.Password,
+		user.Email,
+	).Scan(
+		&user.ID,
+		&user.CreatedAt,
+	)
+
+	return err
 }
