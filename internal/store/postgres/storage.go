@@ -1,9 +1,8 @@
 package postgres
 
 import (
-	"database/sql"
-
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresStorage struct {
@@ -11,10 +10,10 @@ type PostgresStorage struct {
 	userRepo *PostgresUserRepository
 }
 
-func NewPostgresStorage(db *sql.DB) *PostgresStorage {
+func NewPostgresStorage(dbPool *pgxpool.Pool) *PostgresStorage {
 	return &PostgresStorage{
-		postRepo: newPostgresPostRepository(db),
-		userRepo: newPostgresUserRepository(db),
+		postRepo: newPostgresPostRepository(dbPool),
+		userRepo: newPostgresUserRepository(dbPool),
 	}
 }
 

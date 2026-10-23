@@ -2,18 +2,18 @@ package postgres
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresPostRepository struct {
-	db *sql.DB
+	dbPool *pgxpool.Pool
 }
 
-func newPostgresPostRepository(db *sql.DB) *PostgresPostRepository {
+func newPostgresPostRepository(dbPool *pgxpool.Pool) *PostgresPostRepository {
 	return &PostgresPostRepository{
-		db: db,
+		dbPool: dbPool,
 	}
 }
 
@@ -23,7 +23,7 @@ func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post
 	 VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
 	`
 
-	err := repo.db.QueryRowContext(
+	err := repo.dbPool.QueryRow(
 		ctx,
 		query,
 		post.Content,

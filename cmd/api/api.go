@@ -11,14 +11,12 @@ import (
 )
 
 type application struct {
-	config *config
-	store  store.Storage
+	store store.Storage
 }
 
-func newApplication(cfg *config, store store.Storage) *application {
+func newApplication(store store.Storage) *application {
 	return &application{
-		config: cfg,
-		store:  store,
+		store: store,
 	}
 }
 
@@ -42,26 +40,16 @@ func (app *application) mount() http.Handler {
 	return r
 }
 
-func (app *application) run(mux http.Handler) error {
+func (app *application) run(cfg *appConfig, mux http.Handler) error {
 	srv := &http.Server{
-		Addr:         app.config.addr,
+		Addr:         cfg.addr,
 		Handler:      mux,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server has started on %s", app.config.addr)
+	log.Printf("Server has started on %s", cfg.addr)
 
 	return srv.ListenAndServe()
-}
-
-type config struct {
-	addr string
-}
-
-func newConfig(addr string) *config {
-	return &config{
-		addr: addr,
-	}
 }
