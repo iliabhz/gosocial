@@ -12,6 +12,11 @@ tasks:
       - air
     silent: true
 
+  run:
+    desc: Run the go app
+    cmds:
+      - go run ./cmd/api
+
   test:
     desc: Run the go test suite
     cmds:
