@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -33,7 +34,10 @@ func newDBPool(dsn string) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("Failed to create an connection pool: %w", err)
 	}
 
-	err = dbPool.Ping(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	err = dbPool.Ping(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to establish an connection to the database: %w", err)
 	}
