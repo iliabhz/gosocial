@@ -1,15 +1,20 @@
 package main
 
-import "github.com/iliabhz/gosocial/internal/env"
+import (
+	"github.com/iliabhz/gosocial/internal/env"
+)
 
 type appConfig struct {
 	addr string
+	env  string
 }
 
 func newAppConfig() *appConfig {
 	addr := env.GetString("ADDR", ":8080")
+	env := env.GetString("ENV", "dev")
 	return &appConfig{
 		addr: addr,
+		env:  env,
 	}
 }
 

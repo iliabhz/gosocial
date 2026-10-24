@@ -13,11 +13,13 @@ import (
 type application struct {
 	mux   http.Handler
 	store store.Storage
+	env   string
 }
 
-func newApplication(store store.Storage) *application {
+func newApplication(cfg *appConfig, store store.Storage) *application {
 	return &application{
 		store: store,
+		env:   cfg.env,
 	}
 }
 

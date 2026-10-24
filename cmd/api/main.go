@@ -7,6 +7,8 @@ import (
 	"github.com/joho/godotenv"
 )
 
+const version = "0.0.1"
+
 func main() {
 	err := godotenv.Load()
 	if err != nil {
@@ -18,13 +20,13 @@ func main() {
 
 	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(err.Error())
 	}
 	defer store.Close()
 
 	log.Println("Database connection pool established")
 
-	app := newApplication(store)
+	app := newApplication(appCfg, store)
 
 	app.mount()
 	log.Fatal(app.run(appCfg))
