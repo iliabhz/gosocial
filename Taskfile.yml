@@ -3,7 +3,7 @@ version: "3"
 dotenv: [".env"]
 
 vars:
-  MIGRATIONS_PATH: ./cmd/migrate/migrations
+  MIGRATIONS_PATH: ./db/migrations
 
 tasks:
   default:
@@ -30,12 +30,12 @@ tasks:
   migrate-up:
     desc: Migrate up the sql schema
     cmds:
-      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_ADDR" up
+      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" up
 
   migrate-down:*:
     desc: Migrate down the sql schema
     cmds:
-      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_ADDR" down "{{index .MATCH 0}}"
+      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" down {{index .MATCH 0}}
 
   seed: go run cmd/migrate/seed/main.go
 

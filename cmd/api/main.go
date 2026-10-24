@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"github.com/iliabhz/gosocial/internal/db"
+	"github.com/iliabhz/gosocial/db"
 	"github.com/joho/godotenv"
 )
 

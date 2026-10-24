@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS posts(
+    id bigserial PRIMARY KEY,
+    content text NOT NULL,
+    title text NOT NULL,
+    user_id bigint NOT NULL,
+    tags varchar(50)[],
+    created_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+    updated_at timestamp(0) with time zone NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
