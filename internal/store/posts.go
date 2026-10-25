@@ -13,5 +13,6 @@ type Post struct {
 }
 
 type PostRepository interface {
+	GetByID(context.Context, int64) (*Post, error)
 	Create(context.Context, *Post) error
 }
