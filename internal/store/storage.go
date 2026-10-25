@@ -1,8 +1,12 @@
 package store
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
-var ErrPostNotFound = errors.New("post not found")
+var ErrNotFound = errors.New("not found")
+var ErrPostNotFound = fmt.Errorf("post: %w", ErrNotFound)
 
 type Storage interface {
 	Posts() PostRepository
