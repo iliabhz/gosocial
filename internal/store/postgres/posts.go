@@ -3,11 +3,9 @@ package postgres
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,9 +26,6 @@ func (repo *PostgresPostRepository) GetByID(ctx context.Context, postID int64) (
 
 	var post store.Post
 
-	var createdAt pgtype.Timestamptz
-	var updeatedAt pgtype.Timestamptz
-
 	err := repo.dbPool.QueryRow(
 		ctx,
 		query,
@@ -41,12 +36,9 @@ func (repo *PostgresPostRepository) GetByID(ctx context.Context, postID int64) (
 		&post.Title,
 		&post.UserID,
 		&post.Tags,
-		&createdAt,
-		&updeatedAt,
+		&post.CreatedAt,
+		&post.UpdatedAt,
 	)
-
-	post.CreatedAt = createdAt.Time.Format(time.RFC3339)
-	post.UpdatedAt = updeatedAt.Time.Format(time.RFC3339)
 
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
@@ -62,9 +54,6 @@ func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post
 	 VALUES ($1, $2, $3, $4) RETURNING id, created_at::text, updated_at::text
 	`
 
-	var createdAt pgtype.Timestamptz
-	var updeatedAt pgtype.Timestamptz
-
 	err := repo.dbPool.QueryRow(
 		ctx,
 		query,
@@ -74,12 +63,9 @@ func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post
 		post.Tags,
 	).Scan(
 		&post.ID,
-		&createdAt,
-		&updeatedAt,
+		&post.CreatedAt,
+		&post.UpdatedAt,
 	)
-
-	post.CreatedAt = createdAt.Time.Format(time.RFC3339)
-	post.UpdatedAt = updeatedAt.Time.Format(time.RFC3339)
 
 	return err
 }
