@@ -39,7 +39,7 @@ func writeJSONError(w http.ResponseWriter, r *http.Request, err error) {
 	}
 
 	if e, ok := errors.AsType[validator.ValidationErrors](err); ok {
-		writeJSON(w, http.StatusNotFound, map[string]any{"errors": validationMessages(e)})
+		writeJSON(w, http.StatusBadRequest, map[string]any{"errors": validationMessages(e)})
 		return
 	}
 
