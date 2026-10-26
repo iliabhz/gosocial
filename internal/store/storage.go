@@ -3,7 +3,10 @@ package store
 import (
 	"errors"
 	"fmt"
+	"time"
 )
+
+var QueryTimeoutDuration = time.Second * 15
 
 var ErrNotFound = errors.New("not found")
 var ErrPostNotFound = fmt.Errorf("post: %w", ErrNotFound)

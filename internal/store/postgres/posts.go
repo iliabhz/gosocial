@@ -26,6 +26,9 @@ func (repo *PostgresPostRepository) GetByID(ctx context.Context, postID int64) (
 	SELECT id, content, title, user_id, tags, created_at, updated_at FROM posts WHERE id = $1;
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
 	var post store.Post
 
 	err := repo.dbPool.QueryRow(
@@ -84,6 +87,9 @@ func (repo *PostgresPostRepository) UpdateByID(ctx context.Context, title *strin
 
 	query := "UPDATE posts " + updateStrBulilder.String() + fmt.Sprintf(" WHERE id = %v", postID)
 
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
 	cmdTag, err := repo.dbPool.Exec(ctx, query, args...)
 	if err != nil {
 		return err
@@ -101,6 +107,9 @@ func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post
 	INSERT INTO posts (content, title, user_id, tags)
 	 VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
 
 	err := repo.dbPool.QueryRow(
 		ctx,
@@ -122,6 +131,9 @@ func (repo *PostgresPostRepository) DeleteByID(ctx context.Context, postID int64
 	query := `
 	DELETE FROM posts WHERE id=$1;
 	`
+
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
 
 	cmdTag, err := repo.dbPool.Exec(ctx, query, postID)
 	if err != nil {
