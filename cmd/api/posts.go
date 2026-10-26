@@ -57,7 +57,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	post.Comments = comments
 
-	writeJSON(w, http.StatusFound, post)
+	writeDataJSON(w, http.StatusFound, &post)
 }
 
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
@@ -118,7 +118,7 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	if err := writeJSON(w, http.StatusCreated, &post); err != nil {
+	if err := writeDataJSON(w, http.StatusCreated, &post); err != nil {
 		writeJSONError(w, r, err)
 		return
 	}

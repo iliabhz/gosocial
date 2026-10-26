@@ -24,6 +24,10 @@ func writeJSON(w http.ResponseWriter, status int, data any) error {
 	return json.MarshalWrite(w, data)
 }
 
+func writeDataJSON(w http.ResponseWriter, status int, data any) error {
+	return writeJSON(w, status, map[string]any{"data": data})
+}
+
 func readJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	maxBytes := 1 * MB
 	r.Body = http.MaxBytesReader(w, r.Body, int64(maxBytes))
