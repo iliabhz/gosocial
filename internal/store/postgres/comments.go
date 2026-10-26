@@ -25,6 +25,9 @@ func (repo *PostgresCommentRepository) GetByPostID(ctx context.Context, postID i
 	ORDER BY c.created_at DESC;
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
 	rows, err := repo.dbPool.Query(ctx, query, postID)
 	if err != nil {
 		return nil, err

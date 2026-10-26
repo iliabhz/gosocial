@@ -23,6 +23,9 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User
 	 VALUES ($1, $2, $3) RETURNING id, created_at
 	`
 
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
 	err := repo.dbPool.QueryRow(
 		ctx,
 		query,
