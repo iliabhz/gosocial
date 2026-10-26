@@ -3,6 +3,8 @@ package postgres
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/iliabhz/gosocial/internal/store"
 	"github.com/jackc/pgx/v5"
@@ -46,6 +48,52 @@ func (repo *PostgresPostRepository) GetByID(ctx context.Context, postID int64) (
 	default:
 		return &post, err
 	}
+}
+
+func (repo *PostgresPostRepository) UpdateByID(ctx context.Context, title *string, content *string, tags []string, postID int64) error {
+	var updateStrBulilder strings.Builder
+	updateStrBulilder.WriteString("SET ")
+
+	var args []any
+	i := 1
+
+	if title != nil {
+		updateStrBulilder.WriteString(fmt.Sprintf("title = $%v", i))
+		args = append(args, *title)
+		i++
+	}
+	if content != nil {
+		if i == 1 {
+			updateStrBulilder.WriteString(fmt.Sprintf("content = $%v", i))
+		} else {
+			updateStrBulilder.WriteString(fmt.Sprintf(", content = $%v", i))
+		}
+
+		args = append(args, *content)
+		i++
+	}
+	if len(tags) != 0 {
+		if i == 1 {
+			updateStrBulilder.WriteString(fmt.Sprintf("tags = $%v", i))
+		} else {
+			updateStrBulilder.WriteString(fmt.Sprintf(", tags = $%v", i))
+		}
+
+		args = append(args, tags)
+	}
+
+	query := "UPDATE posts " + updateStrBulilder.String() + fmt.Sprintf(" WHERE id = %v", postID)
+
+	cmdTag, err := repo.dbPool.Exec(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() == 0 {
+		return store.ErrPostNotFound
+	}
+
+	return nil
 }
 
 func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post) error {

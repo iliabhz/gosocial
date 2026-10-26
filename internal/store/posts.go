@@ -18,6 +18,7 @@ type Post struct {
 
 type PostRepository interface {
 	GetByID(context.Context, int64) (*Post, error)
+	UpdateByID(ctx context.Context, title *string, content *string, tags []string, postID int64) error
 	DeleteByID(context.Context, int64) error
 	Create(context.Context, *Post) error
 }

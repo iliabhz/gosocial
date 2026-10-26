@@ -16,6 +16,12 @@ type CreatePostPayload struct {
 	Tags    []string `json:"tags"`
 }
 
+type UpdatePostPayload struct {
+	Title   *string  `json:"title" validate:"omitempty,max=100"`
+	Content *string  `json:"content" validate:"omitempty,max=1000"`
+	Tags    []string `json:"tags"`
+}
+
 func (app *application) PostCtx(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		postIDStr := chi.URLParam(r, "postID")
@@ -40,6 +46,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	post, ok := ctx.Value("post").(*store.Post)
 	if !ok {
 		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		return
 	}
 
 	comments, err := app.store.Comments().GetByPostID(ctx, post.ID)
@@ -54,7 +61,35 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	post, ok := ctx.Value("post").(*store.Post)
+	if !ok {
+		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		return
+	}
 
+	var payload UpdatePostPayload
+	if err := readJSON(w, r, &payload); err != nil {
+		writeJSONError(w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	if payload.Title == nil && payload.Content == nil && len(payload.Tags) == 0 {
+		writeJSONError(w, r, NewHTTPError("Invalid update payload", http.StatusBadRequest))
+		return
+	}
+
+	if err := app.store.Posts().UpdateByID(ctx, payload.Title, payload.Content, payload.Tags, post.ID); err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, "Updated the post successfully")
 }
 
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
