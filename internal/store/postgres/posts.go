@@ -54,38 +54,32 @@ func (repo *PostgresPostRepository) GetByID(ctx context.Context, postID int64) (
 }
 
 func (repo *PostgresPostRepository) UpdateByID(ctx context.Context, title *string, content *string, tags []string, postID int64) error {
-	var updateStrBulilder strings.Builder
-	updateStrBulilder.WriteString("SET ")
-
 	var args []any
-	i := 1
+	var sets []string
 
 	if title != nil {
-		updateStrBulilder.WriteString(fmt.Sprintf("title = $%v", i))
 		args = append(args, *title)
-		i++
+		sets = append(sets, fmt.Sprintf("title = $%d", len(args)))
 	}
 	if content != nil {
-		if i == 1 {
-			updateStrBulilder.WriteString(fmt.Sprintf("content = $%v", i))
-		} else {
-			updateStrBulilder.WriteString(fmt.Sprintf(", content = $%v", i))
-		}
-
 		args = append(args, *content)
-		i++
+		sets = append(sets, fmt.Sprintf("content = $%d", len(args)))
 	}
 	if len(tags) != 0 {
-		if i == 1 {
-			updateStrBulilder.WriteString(fmt.Sprintf("tags = $%v", i))
-		} else {
-			updateStrBulilder.WriteString(fmt.Sprintf(", tags = $%v", i))
-		}
-
 		args = append(args, tags)
+		sets = append(sets, fmt.Sprintf("tags = $%d", len(args)))
 	}
 
-	query := "UPDATE posts " + updateStrBulilder.String() + fmt.Sprintf(" WHERE id = %v", postID)
+	sets = append(sets, "updated_at = NOW()")
+
+	query := fmt.Sprintf(`
+        UPDATE posts
+        SET %s
+        WHERE id = %d
+    `,
+		strings.Join(sets, ", "),
+		postID,
+	)
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
 	defer cancel()
