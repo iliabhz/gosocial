@@ -10,6 +10,7 @@ var ErrPostNotFound = fmt.Errorf("post: %w", ErrNotFound)
 
 type Storage interface {
 	Posts() PostRepository
+	Comments() CommentRepository
 	Users() UserRepository
 	Close()
 }

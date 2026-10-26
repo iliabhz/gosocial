@@ -41,6 +41,14 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
 	}
 
+	comments, err := app.store.Comments().GetByPostID(ctx, post.ID)
+	if err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	post.Comments = comments
+
 	writeJSON(w, http.StatusFound, post)
 }
 

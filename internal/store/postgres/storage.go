@@ -10,9 +10,10 @@ import (
 )
 
 type PostgresStorage struct {
-	dbPool   *pgxpool.Pool
-	postRepo *PostgresPostRepository
-	userRepo *PostgresUserRepository
+	dbPool      *pgxpool.Pool
+	postRepo    *PostgresPostRepository
+	commentRepo *PostgresCommentRepository
+	userRepo    *PostgresUserRepository
 }
 
 func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
@@ -22,9 +23,10 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	}
 
 	return &PostgresStorage{
-		dbPool:   dbPool,
-		postRepo: newPostgresPostRepository(dbPool),
-		userRepo: newPostgresUserRepository(dbPool),
+		dbPool:      dbPool,
+		postRepo:    newPostgresPostRepository(dbPool),
+		commentRepo: newPostgresCommentRepository(dbPool),
+		userRepo:    newPostgresUserRepository(dbPool),
 	}, nil
 }
 
@@ -47,6 +49,10 @@ func newDBPool(dsn string) (*pgxpool.Pool, error) {
 
 func (storage *PostgresStorage) Posts() store.PostRepository {
 	return storage.postRepo
+}
+
+func (storage *PostgresStorage) Comments() store.CommentRepository {
+	return storage.commentRepo
 }
 
 func (storage *PostgresStorage) Users() store.UserRepository {
