@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -52,6 +53,10 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusFound, post)
 }
 
+func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
+
+}
+
 func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreatePostPayload
 	if err := readJSON(w, r, &payload); err != nil {
@@ -82,4 +87,19 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 		writeJSONError(w, r, err)
 		return
 	}
+}
+
+func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	post, ok := ctx.Value("post").(*store.Post)
+	if !ok {
+		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+	}
+
+	err := app.store.Posts().DeleteByID(ctx, post.ID)
+	if err != nil {
+		writeJSONError(w, r, err)
+	}
+
+	writeJSON(w, http.StatusOK, fmt.Sprintf("post with id: %v deleted successfully", post.ID))
 }

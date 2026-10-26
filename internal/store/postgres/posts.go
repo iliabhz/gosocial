@@ -69,3 +69,20 @@ func (repo *PostgresPostRepository) Create(ctx context.Context, post *store.Post
 
 	return err
 }
+
+func (repo *PostgresPostRepository) DeleteByID(ctx context.Context, postID int64) error {
+	query := `
+	DELETE FROM posts WHERE id=$1;
+	`
+
+	cmdTag, err := repo.dbPool.Exec(ctx, query, postID)
+	if err != nil {
+		return err
+	}
+
+	if cmdTag.RowsAffected() != 1 {
+		return store.ErrPostNotFound
+	}
+
+	return nil
+}
