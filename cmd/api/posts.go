@@ -57,7 +57,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 
 	post.Comments = comments
 
-	writeDataJSON(w, http.StatusFound, &post)
+	writeDataJSON(w, http.StatusFound, post)
 }
 
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
