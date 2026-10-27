@@ -10,6 +10,7 @@ var QueryTimeoutDuration = time.Second * 15
 
 var ErrNotFound = errors.New("not found")
 var ErrPostNotFound = fmt.Errorf("post: %w", ErrNotFound)
+var ErrUserNotFound = fmt.Errorf("user: %w", ErrNotFound)
 
 type Storage interface {
 	Posts() PostRepository

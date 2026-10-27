@@ -53,6 +53,13 @@ func (app *application) mount() {
 				})
 			})
 		})
+
+		r.Route("/users", func(r chi.Router) {
+			r.Route("/{userID}", func(r chi.Router) {
+				r.Use(app.UserCtx)
+				r.Get("/", app.getUserHandler)
+			})
+		})
 	})
 
 	app.mux = r
