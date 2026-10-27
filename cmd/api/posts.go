@@ -61,13 +61,6 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-	post, ok := ctx.Value("post").(*store.Post)
-	if !ok {
-		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
-		return
-	}
-
 	var payload UpdatePostPayload
 	if err := readJSON(w, r, &payload); err != nil {
 		writeJSONError(w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
@@ -76,6 +69,13 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 
 	if err := Validate.Struct(payload); err != nil {
 		writeJSONError(w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+	post, ok := ctx.Value("post").(*store.Post)
+	if !ok {
+		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
 		return
 	}
 
