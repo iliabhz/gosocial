@@ -22,6 +22,11 @@ tasks:
     cmds:
       - go test -v ./...
 
+  seed:
+    desc: Seed the database with fake data
+    cmds:
+      - go run ./cmd/seed
+
   migration:*:
     desc: Create a sql migration
     cmds:
@@ -36,7 +41,5 @@ tasks:
     desc: Migrate down the sql schema
     cmds:
       - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" down {{index .MATCH 0}}
-
-  seed: go run cmd/migrate/seed/main.go
 
   gen-docs: swag init -g ./api/main.go -d cmd,internal && swag fmt
