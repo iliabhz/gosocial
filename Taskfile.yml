@@ -42,4 +42,9 @@ tasks:
     cmds:
       - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" down {{index .MATCH 0}}
 
+  migrate-force:*:
+    desc: Migrate force version when a version gets dirty
+    cmds:
+      - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" force {{index .MATCH 0}}
+
   gen-docs: swag init -g ./api/main.go -d cmd,internal && swag fmt

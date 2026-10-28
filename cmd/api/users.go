@@ -39,3 +39,39 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	writeDataJSON(w, http.StatusFound, user)
 }
+
+func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	followerUser, ok := ctx.Value("user").(*store.User)
+	if !ok {
+		writeJSONError(w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+		return
+	}
+
+	var userID int64 = 4 // Mock userID before auth
+	if err := app.store.Followers().Follow(ctx, followerUser.ID, userID); err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, "Followed successfully")
+}
+
+func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	unfollowedUser, ok := ctx.Value("user").(*store.User)
+	if !ok {
+		writeJSONError(w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+		return
+	}
+
+	var userID int64 = 4 // Mock userID before auth
+	if err := app.store.Followers().Unfollow(ctx, unfollowedUser.ID, userID); err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, "Unfollowed successfully")
+}

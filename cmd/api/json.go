@@ -52,6 +52,10 @@ func writeJSONError(w http.ResponseWriter, r *http.Request, err error) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Resource not found"})
 	//case errors.Is(err, ErrUnauthorized):
 	//	writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	case errors.Is(err, store.ErrAlreadyFollowing):
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "Already following the user"})
+	case errors.Is(err, store.ErrNotFollowing):
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Not following the user"})
 	default:
 		slog.Error("internal server error", "method", r.Method, "err", err, "path", r.URL.Path)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Internal server error"})

@@ -58,6 +58,9 @@ func (app *application) mount() {
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.UserCtx)
 				r.Get("/", app.getUserHandler)
+
+				r.Put("/follow", app.followUserHandler)
+				r.Put("/unfollow", app.unfollowUserHandler)
 			})
 		})
 	})
