@@ -52,5 +52,5 @@ tasks:
   gen-docs:
     desc: Generate docs for the API
     cmds:
-      - swag init -g ./api/main.go -d cmd
+      - swag init -g ./api/main.go -d cmd,internal
       - swag fmt -d ./ --exclude ./internal
