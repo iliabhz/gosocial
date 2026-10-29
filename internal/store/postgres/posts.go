@@ -141,26 +141,26 @@ func (repo *PostgresPostRepository) DeleteByID(ctx context.Context, postID int64
 	return nil
 }
 
-func (repo *PostgresPostRepository) GetUserFeed(ctx context.Context, userID int64, fq store.PaginatedFeedQuery) ([]store.FeedPost, error) {
+func (repo *PostgresPostRepository) GetUserFeed(ctx context.Context, userID int64, pf store.PaginatedFeedQuery) ([]store.FeedPost, error) {
 	query := `
     SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.tags, u.username, (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count
     FROM posts p
     LEFT JOIN users u ON u.id = p.user_id
     WHERE p.user_id = $1 OR EXISTS ( SELECT 1 FROM followers f WHERE f.user_id = $1 AND f.follower_id = p.user_id)
-    ORDER BY p.created_at ` + fq.Sort + `, p.id ` + fq.Sort + `
+    ORDER BY p.created_at ` + pf.Sort + `, p.id ` + pf.Sort + `
     LIMIT $2 OFFSET $3
     `
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
 	defer cancel()
 
-	rows, err := repo.dbPool.Query(ctx, query, userID, fq.Limit, fq.Offset)
+	rows, err := repo.dbPool.Query(ctx, query, userID, pf.Limit, pf.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	feed := make([]store.FeedPost, 0, fq.Limit)
+	feed := make([]store.FeedPost, 0, pf.Limit)
 
 	for rows.Next() {
 		var p store.FeedPost

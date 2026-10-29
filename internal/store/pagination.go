@@ -21,33 +21,33 @@ type PaginatedFeedQuery struct {
 	Sort   string `json:"sort" validate:"oneof=ASC DESC"`
 }
 
-func (fq PaginatedFeedQuery) Parse(r *http.Request) (PaginatedFeedQuery, error) {
+func (pf PaginatedFeedQuery) Parse(r *http.Request) (PaginatedFeedQuery, error) {
 	queryStr := r.URL.Query()
 
 	limit := queryStr.Get("limit")
 	if limit != "" {
 		l, err := strconv.Atoi(limit)
 		if err != nil {
-			return fq, nil
+			return pf, nil
 		}
 
-		fq.Limit = l
+		pf.Limit = l
 	}
 
 	offset := queryStr.Get("offset")
 	if offset != "" {
 		o, err := strconv.Atoi(offset)
 		if err != nil {
-			return fq, nil
+			return pf, nil
 		}
 
-		fq.Offset = o
+		pf.Offset = o
 	}
 
 	sort := queryStr.Get("sort")
 	if sort != "" {
-		fq.Sort = strings.ToUpper(sort)
+		pf.Sort = strings.ToUpper(sort)
 	}
 
-	return fq, nil
+	return pf, nil
 }

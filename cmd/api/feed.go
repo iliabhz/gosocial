@@ -7,19 +7,19 @@ import (
 )
 
 func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Request) {
-	fq := store.PaginatedFeedQuery{
+	pf := store.PaginatedFeedQuery{
 		Limit:  20,
 		Offset: 0,
 		Sort:   store.DESC_SORT,
 	}
 
-	fq, err := fq.Parse(r)
+	pf, err := pf.Parse(r)
 	if err != nil {
 		writeJSONError(w, r, NewHTTPError("Invalid pagination query params", http.StatusBadRequest))
 		return
 	}
 
-	if err := Validate.Struct(fq); err != nil {
+	if err := Validate.Struct(pf); err != nil {
 		writeJSONError(w, r, err)
 		return
 	}
@@ -27,7 +27,7 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 	ctx := r.Context()
 
 	var userID int64 = 16 // Mock userID before auth
-	feed, err := app.store.Posts().GetUserFeed(ctx, userID, fq)
+	feed, err := app.store.Posts().GetUserFeed(ctx, userID, pf)
 	if err != nil {
 		writeJSONError(w, r, err)
 		return
