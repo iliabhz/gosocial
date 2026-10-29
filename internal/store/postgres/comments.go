@@ -45,6 +45,10 @@ func (repo *PostgresCommentRepository) GetByPostID(ctx context.Context, postID i
 		comments = append(comments, c)
 	}
 
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return comments, nil
 }
 
