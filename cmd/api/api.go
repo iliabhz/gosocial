@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -11,18 +10,21 @@ import (
 	"github.com/iliabhz/gosocial/docs" // For swagger docs
 	"github.com/iliabhz/gosocial/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
+	"go.uber.org/zap"
 )
 
 type application struct {
-	mux   http.Handler
-	store store.Storage
-	env   string
+	mux    http.Handler
+	store  store.Storage
+	logger *zap.SugaredLogger
+	env    string
 }
 
-func newApplication(cfg *appConfig, store store.Storage) *application {
+func newApplication(cfg *appConfig, store store.Storage, logger *zap.SugaredLogger) *application {
 	return &application{
-		store: store,
-		env:   cfg.env,
+		store:  store,
+		logger: logger,
+		env:    cfg.env,
 	}
 }
 
@@ -91,7 +93,7 @@ func (app *application) run(cfg *appConfig) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("Server has started on %s", cfg.addr)
+	app.logger.Infow("Server has started", "addr", cfg.addr, "env", app.env)
 
 	return srv.ListenAndServe()
 }

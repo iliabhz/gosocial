@@ -1,10 +1,9 @@
 package main
 
 import (
-	"log"
-
 	"github.com/iliabhz/gosocial/db"
 	"github.com/joho/godotenv"
+	"go.uber.org/zap"
 )
 
 const version = "0.0.1"
@@ -27,9 +26,12 @@ const version = "0.0.1"
 // @name						Authorization
 // @description
 func main() {
+	logger := zap.Must(zap.NewProduction()).Sugar()
+	defer logger.Sync()
+
 	err := godotenv.Load()
 	if err != nil {
-		log.Fatalf("Error loading .env file: %v", err)
+		logger.Fatalf("Error loading .env file: %s", err.Error())
 	}
 
 	appCfg := newAppConfig()
@@ -37,14 +39,14 @@ func main() {
 
 	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
-		log.Fatal(err.Error())
+		logger.Fatal(err)
 	}
 	defer store.Close()
 
-	log.Println("Database connection pool established")
+	logger.Info("Database connection pool established")
 
-	app := newApplication(appCfg, store)
+	app := newApplication(appCfg, store, logger)
 
 	app.mount(appCfg)
-	log.Fatal(app.run(appCfg))
+	logger.Fatal(app.run(appCfg))
 }

@@ -14,12 +14,12 @@ func (app *application) UserCtx(next http.Handler) http.Handler {
 		userIDStr := chi.URLParam(r, "userID")
 		userID, err := strconv.ParseInt(userIDStr, 10, 64)
 		if err != nil {
-			writeJSONError(w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
+			writeJSONError(app.logger, w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
 			return
 		}
 		user, err := app.store.Users().GetByID(r.Context(), userID)
 		if err != nil {
-			writeJSONError(w, r, err)
+			writeJSONError(app.logger, w, r, err)
 			return
 		}
 
@@ -47,7 +47,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	user, ok := ctx.Value("user").(*store.User)
 	if !ok {
-		writeJSONError(w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -73,13 +73,13 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 
 	followerUser, ok := ctx.Value("user").(*store.User)
 	if !ok {
-		writeJSONError(w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
 		return
 	}
 
 	var userID int64 = 16 // Mock userID before auth
 	if err := app.store.Followers().Follow(ctx, followerUser.ID, userID); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
@@ -104,13 +104,13 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 
 	unfollowedUser, ok := ctx.Value("user").(*store.User)
 	if !ok {
-		writeJSONError(w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
 		return
 	}
 
 	var userID int64 = 4 // Mock userID before auth
 	if err := app.store.Followers().Unfollow(ctx, unfollowedUser.ID, userID); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 

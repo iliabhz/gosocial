@@ -4,11 +4,11 @@ import (
 	"encoding/json/jsontext"
 	"encoding/json/v2"
 	"errors"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/iliabhz/gosocial/internal/store"
+	"go.uber.org/zap"
 )
 
 const (
@@ -36,7 +36,7 @@ func readJSON(w http.ResponseWriter, r *http.Request, data any) error {
 	return json.UnmarshalDecode(dec, data, json.RejectUnknownMembers(true))
 }
 
-func writeJSONError(w http.ResponseWriter, r *http.Request, err error) {
+func writeJSONError(logger *zap.SugaredLogger, w http.ResponseWriter, r *http.Request, err error) {
 	if e, ok := errors.AsType[*HTTPError](err); ok {
 		writeJSON(w, e.status, map[string]any{"error": e.msg})
 		return
@@ -57,7 +57,7 @@ func writeJSONError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, store.ErrNotFollowing):
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Not following the user"})
 	default:
-		slog.Error("internal server error", "method", r.Method, "err", err, "path", r.URL.Path)
+		logger.Errorw("internal server error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Internal server error"})
 	}
 }

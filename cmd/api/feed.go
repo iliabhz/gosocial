@@ -34,12 +34,12 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 
 	pf, err := pf.Parse(r)
 	if err != nil {
-		writeJSONError(w, r, NewHTTPError("Invalid pagination query params", http.StatusBadRequest))
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid pagination query params", http.StatusBadRequest))
 		return
 	}
 
 	if err := Validate.Struct(pf); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
@@ -47,17 +47,17 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 
 	ff, err = ff.Parse(r)
 	if err != nil {
-		writeJSONError(w, r, NewHTTPError("Invalid filter query params", http.StatusBadRequest))
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid filter query params", http.StatusBadRequest))
 		return
 	}
 
 	if err := Validate.Struct(ff); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
 	if !ff.Since.IsZero() && !ff.Until.IsZero() && ff.Since.After(ff.Until) {
-		writeJSONError(w, r, NewHTTPError("since date is after until date", http.StatusBadRequest))
+		writeJSONError(app.logger, w, r, NewHTTPError("since date is after until date", http.StatusBadRequest))
 		return
 	}
 
@@ -66,7 +66,7 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 	var userID int64 = 16 // Mock userID before auth
 	feed, err := app.store.Posts().GetUserFeed(ctx, userID, pf, ff)
 	if err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 

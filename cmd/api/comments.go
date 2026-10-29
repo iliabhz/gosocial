@@ -13,12 +13,12 @@ type CreateCommentPayload struct {
 func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Request) {
 	var payload CreateCommentPayload
 	if err := readJSON(w, r, &payload); err != nil {
-		writeJSONError(w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
 		return
 	}
 
 	if err := Validate.Struct(payload); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
@@ -26,7 +26,7 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	post, ok := ctx.Value("post").(*store.Post)
 	if !ok {
-		writeJSONError(w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
 		return
 	}
 
@@ -43,12 +43,12 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := app.store.Comments().Create(ctx, &comment); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
 	if err := writeDataJSON(w, http.StatusCreated, &comment); err != nil {
-		writeJSONError(w, r, err)
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 }
