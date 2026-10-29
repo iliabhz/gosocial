@@ -141,20 +141,76 @@ func (repo *PostgresPostRepository) DeleteByID(ctx context.Context, postID int64
 	return nil
 }
 
-func (repo *PostgresPostRepository) GetUserFeed(ctx context.Context, userID int64, pf store.PaginatedFeedQuery) ([]store.FeedPost, error) {
+func (repo *PostgresPostRepository) GetUserFeed(ctx context.Context, userID int64, pf store.PaginatedFeedQuery, ff store.FilterdFeedQuery) ([]store.FeedPost, error) {
 	query := `
-    SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.tags, u.username, (SELECT COUNT(*) FROM comments c WHERE c.post_id = p.id) AS comment_count
-    FROM posts p
-    LEFT JOIN users u ON u.id = p.user_id
-    WHERE p.user_id = $1 OR EXISTS ( SELECT 1 FROM followers f WHERE f.user_id = $1 AND f.follower_id = p.user_id)
-    ORDER BY p.created_at ` + pf.Sort + `, p.id ` + pf.Sort + `
-    LIMIT $2 OFFSET $3
+    SELECT
+    	p.id,
+    	p.user_id,
+    	p.title,
+    	p.content,
+    	p.created_at,
+    	p.tags,
+    	u.username,
+    	(
+        	SELECT COUNT(*)
+        	FROM comments c
+        	WHERE c.post_id = p.id
+    	) AS comment_count
+	FROM posts p
+	LEFT JOIN users u ON u.id = p.user_id
+	WHERE (
+    	p.user_id = $1
+    	OR EXISTS (
+        	SELECT 1
+        	FROM followers f
+        	WHERE f.user_id = $1
+          	AND f.follower_id = p.user_id
+    	)
+	)
+	AND (
+    	$4 = ''
+    	OR p.title ILIKE '%' || $4 || '%'
+	)
+	AND (
+    	COALESCE(cardinality($5::varchar(50)[]), 0) = 0
+    	OR p.tags @> $5::varchar(50)[]
+	)
+	AND (
+    	$6::timestamptz IS NULL
+    	OR p.created_at >= $6
+	)
+	AND (
+    	$7::timestamptz IS NULL
+    	OR p.created_at < $7
+	)
+	ORDER BY p.created_at DESC, p.id DESC
+	LIMIT $2 OFFSET $3;
     `
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
 	defer cancel()
 
-	rows, err := repo.dbPool.Query(ctx, query, userID, pf.Limit, pf.Offset)
+	var sinceArg any
+	if !ff.Since.IsZero() {
+		sinceArg = ff.Since
+	}
+
+	var untilArg any
+	if !ff.Until.IsZero() {
+		untilArg = ff.Until
+	}
+
+	rows, err := repo.dbPool.Query(
+		ctx,
+		query,
+		userID,
+		pf.Limit,
+		pf.Offset,
+		ff.Search,
+		ff.Tags,
+		sinceArg,
+		untilArg,
+	)
 	if err != nil {
 		return nil, err
 	}

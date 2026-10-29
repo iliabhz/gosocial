@@ -27,5 +27,5 @@ type PostRepository interface {
 	UpdateByID(ctx context.Context, title *string, content *string, tags []string, postID int64) error
 	DeleteByID(context.Context, int64) error
 	Create(context.Context, *Post) error
-	GetUserFeed(context.Context, int64, PaginatedFeedQuery) ([]FeedPost, error)
+	GetUserFeed(context.Context, int64, PaginatedFeedQuery, FilterdFeedQuery) ([]FeedPost, error)
 }

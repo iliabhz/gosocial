@@ -24,10 +24,28 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	ff := store.FilterdFeedQuery{}
+
+	ff, err = ff.Parse(r)
+	if err != nil {
+		writeJSONError(w, r, NewHTTPError("Invalid filter query params", http.StatusBadRequest))
+		return
+	}
+
+	if err := Validate.Struct(ff); err != nil {
+		writeJSONError(w, r, err)
+		return
+	}
+
+	if !ff.Since.IsZero() && !ff.Until.IsZero() && ff.Since.After(ff.Until) {
+		writeJSONError(w, r, NewHTTPError("since date is after until date", http.StatusBadRequest))
+		return
+	}
+
 	ctx := r.Context()
 
 	var userID int64 = 16 // Mock userID before auth
-	feed, err := app.store.Posts().GetUserFeed(ctx, userID, pf)
+	feed, err := app.store.Posts().GetUserFeed(ctx, userID, pf, ff)
 	if err != nil {
 		writeJSONError(w, r, err)
 		return
