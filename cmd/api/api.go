@@ -1,13 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/iliabhz/gosocial/docs" // For swagger docs
 	"github.com/iliabhz/gosocial/internal/store"
+	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
 type application struct {
@@ -23,7 +26,7 @@ func newApplication(cfg *appConfig, store store.Storage) *application {
 	}
 }
 
-func (app *application) mount() {
+func (app *application) mount(cfg *appConfig) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -38,6 +41,9 @@ func (app *application) mount() {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
+
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", cfg.addr)
+		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
@@ -73,6 +79,10 @@ func (app *application) mount() {
 }
 
 func (app *application) run(cfg *appConfig) error {
+	// Docs
+	docs.SwaggerInfo.Version = version
+	docs.SwaggerInfo.Host = cfg.apiURL
+
 	srv := &http.Server{
 		Addr:         cfg.addr,
 		Handler:      app.mux,

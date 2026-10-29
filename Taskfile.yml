@@ -9,12 +9,14 @@ tasks:
   default:
     desc: Run the air program for hot realoding
     cmds:
+      - task: gen-docs
       - air
     silent: true
 
   run:
     desc: Run the go app
     cmds:
+      - task: gen-docs
       - go run ./cmd/api
 
   test:
@@ -47,4 +49,8 @@ tasks:
     cmds:
       - migrate -path="{{.MIGRATIONS_PATH}}" -database="$DB_MIGRATION_DSN" force {{index .MATCH 0}}
 
-  gen-docs: swag init -g ./api/main.go -d cmd,internal && swag fmt
+  gen-docs:
+    desc: Generate docs for the API
+    cmds:
+      - swag init -g ./api/main.go -d cmd
+      - swag fmt -d ./ --exclude ./internal

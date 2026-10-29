@@ -5,16 +5,19 @@ import (
 )
 
 type appConfig struct {
-	addr string
-	env  string
+	addr   string
+	apiURL string
+	env    string
 }
 
 func newAppConfig() *appConfig {
 	addr := env.GetString("ADDR", ":8080")
+	apiURL := env.GetString("EXTERNAL_URL", "localhost:8080")
 	env := env.GetString("ENV", "dev")
 	return &appConfig{
-		addr: addr,
-		env:  env,
+		addr:   addr,
+		apiURL: apiURL,
+		env:    env,
 	}
 }
 
