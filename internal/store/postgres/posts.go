@@ -140,3 +140,50 @@ func (repo *PostgresPostRepository) DeleteByID(ctx context.Context, postID int64
 
 	return nil
 }
+
+func (repo *PostgresPostRepository) GetUserFeed(ctx context.Context, userID int64) ([]store.FeedPost, error) {
+	query := `
+	SELECT p.id, p.user_id, p.title, p.content, p.created_at, p.tags, u.username, COUNT(c.id) AS comment_count
+	FROM posts p
+	LEFT JOIN comments c on c.post_id = p.id
+	LEFT JOIN users u on p.user_id = u.id
+	JOIN followers f ON f.follower_id = p.user_id OR p.user_id = $1
+	WHERE f.user_id = $1 OR p.user_id = $1
+	GROUP BY p.id, u.username
+	ORDER BY p.created_at DESC
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
+	rows, err := repo.dbPool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var feed []store.FeedPost
+
+	for rows.Next() {
+		var p store.FeedPost
+		err := rows.Scan(
+			&p.ID,
+			&p.UserID,
+			&p.Title,
+			&p.Content,
+			&p.CreatedAt,
+			&p.Tags,
+			&p.User.Username,
+			&p.CommentCount,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		p.User.ID = p.UserID
+
+		feed = append(feed, p)
+	}
+
+	return feed, nil
+}

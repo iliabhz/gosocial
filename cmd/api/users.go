@@ -49,7 +49,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	var userID int64 = 4 // Mock userID before auth
+	var userID int64 = 16 // Mock userID before auth
 	if err := app.store.Followers().Follow(ctx, followerUser.ID, userID); err != nil {
 		writeJSONError(w, r, err)
 		return
