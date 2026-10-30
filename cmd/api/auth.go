@@ -28,7 +28,7 @@ type RegisterUserPayload struct {
 //	@Failure		500		{object}	error
 //	@Router			/authentication/user [post]
 func (app *application) registerUserHandler(mailCfg *mailConfig) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
 		payload := RegisterUserPayload{}
 		if err := readJSON(w, r, &payload); err != nil {
 			writeJSONError(app.logger, w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
@@ -68,5 +68,5 @@ func (app *application) registerUserHandler(mailCfg *mailConfig) http.HandlerFun
 		}
 
 		writeJSON(w, http.StatusCreated, "User registered")
-	})
+	}
 }
