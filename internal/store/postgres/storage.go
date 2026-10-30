@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -30,6 +31,20 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 		userRepo:     newPostgresUserRepository(dbPool),
 		followerRepo: newPostgresFollwerRepository(dbPool),
 	}, nil
+}
+
+func withTx(ctx context.Context, dbPool *pgxpool.Pool, fn func(pgx.Tx) error) error {
+	tx, err := dbPool.BeginTx(ctx, pgx.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	if err := fn(tx); err != nil {
+		tx.Rollback(ctx)
+		return err
+	}
+
+	return tx.Commit(ctx)
 }
 
 func newDBPool(dsn string) (*pgxpool.Pool, error) {

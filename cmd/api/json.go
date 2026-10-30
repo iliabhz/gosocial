@@ -56,6 +56,10 @@ func writeJSONError(logger *zap.SugaredLogger, w http.ResponseWriter, r *http.Re
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "Already following the user"})
 	case errors.Is(err, store.ErrNotFollowing):
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Not following the user"})
+	case errors.Is(err, store.ErrDuplicateEmail):
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "A user with that email already exists"})
+	case errors.Is(err, store.ErrDuplicateUsername):
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "A user with that username already exists"})
 	default:
 		logger.Errorw("internal server error", "method", r.Method, "path", r.URL.Path, "error", err.Error())
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "Internal server error"})

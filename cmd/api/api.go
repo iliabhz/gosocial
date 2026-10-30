@@ -28,7 +28,7 @@ func newApplication(cfg *appConfig, store store.Storage, logger *zap.SugaredLogg
 	}
 }
 
-func (app *application) mount(cfg *appConfig) {
+func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
@@ -44,8 +44,13 @@ func (app *application) mount(cfg *appConfig) {
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
 
-		docsURL := fmt.Sprintf("%s/swagger/doc.json", cfg.addr)
+		docsURL := fmt.Sprintf("%s/swagger/doc.json", appCfg.addr)
 		r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
+
+		//Public routes
+		r.Route("/authentication", func(r chi.Router) {
+			r.Post("/user", app.registerUserHandler(mailCfg))
+		})
 
 		r.Route("/posts", func(r chi.Router) {
 			r.Post("/", app.createPostHandler)
@@ -63,6 +68,8 @@ func (app *application) mount(cfg *appConfig) {
 		})
 
 		r.Route("/users", func(r chi.Router) {
+			r.Put("/activate", app.activateUserHandler)
+
 			r.Route("/{userID}", func(r chi.Router) {
 				r.Use(app.UserCtx)
 				r.Get("/", app.getUserHandler)

@@ -36,6 +36,7 @@ func main() {
 
 	appCfg := newAppConfig()
 	dbCfg := newDBConfig()
+	mailCfg := newMailConfig()
 
 	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
@@ -47,6 +48,6 @@ func main() {
 
 	app := newApplication(appCfg, store, logger)
 
-	app.mount(appCfg)
+	app.mount(appCfg, mailCfg)
 	logger.Fatal(app.run(appCfg))
 }

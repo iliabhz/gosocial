@@ -15,6 +15,9 @@ var ErrUserNotFound = fmt.Errorf("user: %w", ErrNotFound)
 var ErrAlreadyFollowing = errors.New("Already following the user")
 var ErrNotFollowing = errors.New("Not following the user")
 
+var ErrDuplicateEmail = errors.New("duplicate email")
+var ErrDuplicateUsername = errors.New("duplicate username")
+
 type Storage interface {
 	Posts() PostRepository
 	Comments() CommentRepository

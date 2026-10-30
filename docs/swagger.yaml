@@ -1,5 +1,13 @@
 basePath: /v1
 definitions:
+  main.ActivateUserPayload:
+    properties:
+      token:
+        maxLength: 255
+        type: string
+    required:
+    - token
+    type: object
   main.CreatePostPayload:
     properties:
       content:
@@ -15,6 +23,23 @@ definitions:
     required:
     - content
     - title
+    type: object
+  main.RegisterUserPayload:
+    properties:
+      email:
+        maxLength: 255
+        type: string
+      password:
+        maxLength: 72
+        minLength: 3
+        type: string
+      username:
+        maxLength: 100
+        type: string
+    required:
+    - email
+    - password
+    - username
     type: object
   main.UpdatePostPayload:
     properties:
@@ -104,6 +129,8 @@ definitions:
         type: string
       id:
         type: integer
+      is_active:
+        type: boolean
       username:
         type: string
     type: object
@@ -119,6 +146,34 @@ info:
   termsOfService: http://swagger.io/terms/
   title: GoSocial API
 paths:
+  /authentication/user:
+    post:
+      consumes:
+      - application/json
+      description: Registers a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.RegisterUserPayload'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: User registered
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      summary: Registers a user
+      tags:
+      - authentication
   /health:
     get:
       description: Healthcheck endpoint
@@ -318,6 +373,9 @@ paths:
         "404":
           description: User not found
           schema: {}
+        "442":
+          description: Couldn't process the user
+          schema: {}
       security:
       - ApiKeyAuth: []
       summary: Follows a user
@@ -350,6 +408,34 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Unfollow a user
+      tags:
+      - users
+  /users/activate:
+    put:
+      description: Activates/Register a user by invitation token
+      parameters:
+      - description: Invitation token
+        in: body
+        name: token
+        required: true
+        schema:
+          $ref: '#/definitions/main.ActivateUserPayload'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: User activated
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema: {}
+        "500":
+          description: Internal Server Error
+          schema: {}
+      security:
+      - ApiKeyAuth: []
+      summary: Activates/Register a user
       tags:
       - users
   /users/feed:

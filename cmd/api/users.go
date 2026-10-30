@@ -116,3 +116,41 @@ func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Reque
 
 	writeJSON(w, http.StatusOK, "User unfollowed")
 }
+
+type ActivateUserPayload struct {
+	Token string `json:"token" validate:"required,max=255"`
+}
+
+// ActivateUser godoc
+//
+//	@Summary		Activates/Register a user
+//	@Description	Activates/Register a user by invitation token
+//	@Tags			users
+//	@Produce		json
+//	@Param			token	body		ActivateUserPayload	true	"Invitation token"
+//	@Success		204		{string}	string				"User activated"
+//	@Failure		404		{object}	error
+//	@Failure		500		{object}	error
+//	@Security		ApiKeyAuth
+//	@Router			/users/activate [put]
+func (app *application) activateUserHandler(w http.ResponseWriter, r *http.Request) {
+	payload := ActivateUserPayload{}
+	if err := readJSON(w, r, &payload); err != nil {
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
+		return
+	}
+
+	if err := Validate.Struct(payload); err != nil {
+		writeJSONError(app.logger, w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	if err := app.store.Users().Activate(ctx, payload.Token); err != nil {
+		writeJSONError(app.logger, w, r, err)
+		return
+	}
+
+	writeJSON(w, http.StatusOK, "User activated")
+}
