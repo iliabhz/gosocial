@@ -262,3 +262,24 @@ func (repo *PostgresUserRepository) DeleteUserInvitation(ctx context.Context, tx
 
 	return nil
 }
+
+func (repo *PostgresUserRepository) Delete(ctx context.Context, userID int64) error {
+	return withTx(ctx, repo.dbPool, func(tx pgx.Tx) error {
+		query := `
+		DELETE FROM users WHERE id = $1
+		`
+		ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+		defer cancel()
+
+		_, err := tx.Exec(ctx, query, userID)
+		if err != nil {
+			return err
+		}
+
+		if err := repo.DeleteUserInvitation(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}

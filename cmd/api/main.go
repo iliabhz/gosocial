@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/iliabhz/gosocial/db"
+	"github.com/iliabhz/gosocial/internal/mailer"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -46,7 +47,9 @@ func main() {
 
 	logger.Info("Database connection pool established")
 
-	app := newApplication(appCfg, store, logger)
+	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
+
+	app := newApplication(appCfg, store, mailer, logger)
 
 	app.mount(appCfg, mailCfg)
 	logger.Fatal(app.run(appCfg))

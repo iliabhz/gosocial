@@ -44,4 +44,5 @@ type UserRepository interface {
 	DeleteUserInvitation(ctx context.Context, tx pgx.Tx, userID int64) error
 	Update(context.Context, pgx.Tx, *User) error
 	Activate(ctx context.Context, token string) error
+	Delete(ctx context.Context, userID int64) error
 }

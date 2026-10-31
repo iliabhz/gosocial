@@ -7,19 +7,22 @@ import (
 )
 
 type appConfig struct {
-	addr   string
-	apiURL string
-	env    string
+	addr        string
+	apiURL      string
+	frontendURL string
+	env         string
 }
 
 func newAppConfig() *appConfig {
 	addr := env.GetString("ADDR", ":8080")
 	apiURL := env.GetString("EXTERNAL_URL", "localhost:8080")
+	frontendURL := env.GetString("FRONTEND_URL", "localhost:4000")
 	env := env.GetString("ENV", "dev")
 	return &appConfig{
-		addr:   addr,
-		apiURL: apiURL,
-		env:    env,
+		addr:        addr,
+		apiURL:      apiURL,
+		frontendURL: frontendURL,
+		env:         env,
 	}
 }
 
@@ -35,7 +38,14 @@ func newDBConfig() *dbConfig {
 }
 
 type mailConfig struct {
-	expiry time.Duration
+	mailGun   *mailGunConfig
+	domain    string
+	fromEmail string
+	expiry    time.Duration
+}
+
+type mailGunConfig struct {
+	apiKey string
 }
 
 func newMailConfig() *mailConfig {
@@ -44,7 +54,14 @@ func newMailConfig() *mailConfig {
 		expiry = time.Hour * 24 * 3
 	}
 
+	mgCfg := mailGunConfig{
+		apiKey: env.GetString("MAILGUN_API_KEY", ""),
+	}
+
 	return &mailConfig{
-		expiry: expiry,
+		mailGun:   &mgCfg,
+		domain:    env.GetString("MAIL_DOMAIN", ""),
+		fromEmail: env.GetString("MAIL_FROM_EMAIL", ""),
+		expiry:    expiry,
 	}
 }

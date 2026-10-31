@@ -8,6 +8,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/iliabhz/gosocial/docs" // For swagger docs
+	"github.com/iliabhz/gosocial/internal/mailer"
 	"github.com/iliabhz/gosocial/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
@@ -16,13 +17,15 @@ import (
 type application struct {
 	mux    http.Handler
 	store  store.Storage
+	mailer mailer.Client
 	logger *zap.SugaredLogger
 	env    string
 }
 
-func newApplication(cfg *appConfig, store store.Storage, logger *zap.SugaredLogger) *application {
+func newApplication(cfg *appConfig, store store.Storage, mailer mailer.Client, logger *zap.SugaredLogger) *application {
 	return &application{
 		store:  store,
+		mailer: mailer,
 		logger: logger,
 		env:    cfg.env,
 	}
@@ -49,7 +52,7 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 
 		//Public routes
 		r.Route("/authentication", func(r chi.Router) {
-			r.Post("/user", app.registerUserHandler(mailCfg))
+			r.Post("/user", app.registerUserHandler(appCfg, mailCfg))
 		})
 
 		r.Route("/posts", func(r chi.Router) {
