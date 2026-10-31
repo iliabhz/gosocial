@@ -16,7 +16,7 @@ type appConfig struct {
 func newAppConfig() *appConfig {
 	addr := env.GetString("ADDR", ":8080")
 	apiURL := env.GetString("EXTERNAL_URL", "localhost:8080")
-	frontendURL := env.GetString("FRONTEND_URL", "localhost:4000")
+	frontendURL := env.GetString("FRONTEND_URL", "http://localhost:4000")
 	env := env.GetString("ENV", "dev")
 	return &appConfig{
 		addr:        addr,

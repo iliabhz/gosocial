@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/iliabhz/gosocial/docs" // For swagger docs
 	"github.com/iliabhz/gosocial/internal/mailer"
 	"github.com/iliabhz/gosocial/internal/store"
@@ -33,6 +34,16 @@ func newApplication(cfg *appConfig, store store.Storage, mailer mailer.Client, l
 
 func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 	r := chi.NewRouter()
+
+	// Basic CORS
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr)
