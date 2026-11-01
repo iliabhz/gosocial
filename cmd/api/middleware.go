@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -52,6 +53,25 @@ func (app *application) JWTAuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		ctx = context.WithValue(r.Context(), "user", user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) PostCtx(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		postIDStr := chi.URLParam(r, "postID")
+		postID, err := strconv.ParseInt(postIDStr, 10, 64)
+		if err != nil {
+			writeJSONError(app.logger, w, r, NewHTTPError("Invalid post id", http.StatusBadRequest))
+			return
+		}
+		post, err := app.store.Posts().GetByID(r.Context(), postID)
+		if err != nil {
+			writeJSONError(app.logger, w, r, err)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "post", post)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
