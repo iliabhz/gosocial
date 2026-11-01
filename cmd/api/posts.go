@@ -148,12 +148,13 @@ func (app *application) createPostHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	ctx := r.Context()
+	user, _ := ctx.Value("user").(*store.User)
 
 	post := store.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		UserID:  1, // Mock userid before auth
+		UserID:  user.ID,
 	}
 
 	if err := app.store.Posts().Create(ctx, &post); err != nil {

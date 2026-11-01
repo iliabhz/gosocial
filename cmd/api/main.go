@@ -9,6 +9,8 @@ import (
 
 const version = "0.0.1"
 
+var JWTAuth *JWTAuthenticator
+
 //	@title			GoSocial API
 //	@description	API for GoSocial which is a social network built in go
 //	@termsOfService	http://swagger.io/terms/
@@ -38,6 +40,11 @@ func main() {
 	appCfg := newAppConfig()
 	dbCfg := newDBConfig()
 	mailCfg := newMailConfig()
+	jwtCfg := newJWTConfig()
+
+	if jwtCfg.secret == "" {
+		logger.Fatal("No JWT_SECRET was set in the environment variables")
+	}
 
 	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
@@ -48,6 +55,8 @@ func main() {
 	logger.Info("Database connection pool established")
 
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
+
+	JWTAuth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
 
 	app := newApplication(appCfg, store, mailer, logger)
 

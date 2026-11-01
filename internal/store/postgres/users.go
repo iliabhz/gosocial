@@ -25,7 +25,7 @@ func newPostgresUserRepository(dbPool *pgxpool.Pool) *PostgresUserRepository {
 
 func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
 	query := `
-	SELECT id, username, email, password, is_active, created_at FROM users WHERE id = $1;
+	SELECT id, username, email, password, is_active, created_at FROM users WHERE id = $1 AND is_active = true;
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
@@ -37,6 +37,37 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (
 		ctx,
 		query,
 		userID,
+	).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password.Hash,
+		&user.IsActive,
+		&user.CreatedAt,
+	)
+
+	switch {
+	case errors.Is(err, pgx.ErrNoRows):
+		return nil, store.ErrUserNotFound
+	default:
+		return &user, err
+	}
+}
+
+func (repo *PostgresUserRepository) GetByEmail(ctx context.Context, email string) (*store.User, error) {
+	query := `
+	SELECT id, username, email, password, is_active, created_at FROM users WHERE email = $1 AND is_active = true;
+	`
+
+	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
+	defer cancel()
+
+	var user store.User
+
+	err := repo.dbPool.QueryRow(
+		ctx,
+		query,
+		email,
 	).Scan(
 		&user.ID,
 		&user.Username,

@@ -34,8 +34,13 @@ func (p *Password) Set(text string) error {
 	return nil
 }
 
+func (p *Password) Compare(text string) error {
+	return bcrypt.CompareHashAndPassword(p.Hash, []byte(text))
+}
+
 type UserRepository interface {
 	GetByID(context.Context, int64) (*User, error)
+	GetByEmail(context.Context, string) (*User, error)
 	Create(context.Context, *User) error
 	CreateTx(context.Context, pgx.Tx, *User) error
 	CreateAndInvite(ctx context.Context, invitationExp time.Duration, token string, user *User) error

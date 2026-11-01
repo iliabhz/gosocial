@@ -1,32 +1,12 @@
 package main
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/iliabhz/gosocial/internal/store"
 )
-
-func (app *application) UserCtx(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		userIDStr := chi.URLParam(r, "userID")
-		userID, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			writeJSONError(app.logger, w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
-			return
-		}
-		user, err := app.store.Users().GetByID(r.Context(), userID)
-		if err != nil {
-			writeJSONError(app.logger, w, r, err)
-			return
-		}
-
-		ctx := context.WithValue(r.Context(), "user", user)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
 
 // GetUser godoc
 //
@@ -43,11 +23,15 @@ func (app *application) UserCtx(next http.Handler) http.Handler {
 //	@Security		ApiKeyAuth
 //	@Router			/users/{id} [get]
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	user, ok := ctx.Value("user").(*store.User)
-	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+	userIDStr := chi.URLParam(r, "userID")
+	userID, err := strconv.ParseInt(userIDStr, 10, 64)
+	if err != nil {
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
+		return
+	}
+	user, err := app.store.Users().GetByID(r.Context(), userID)
+	if err != nil {
+		writeJSONError(app.logger, w, r, err)
 		return
 	}
 
@@ -69,16 +53,17 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@Security		ApiKeyAuth
 //	@Router			/users/{userID}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	followerUser, ok := ctx.Value("user").(*store.User)
-	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+	followerUserIDStr := chi.URLParam(r, "userID")
+	followerUserID, err := strconv.ParseInt(followerUserIDStr, 10, 64)
+	if err != nil {
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
 		return
 	}
 
-	var userID int64 = 16 // Mock userID before auth
-	if err := app.store.Followers().Follow(ctx, followerUser.ID, userID); err != nil {
+	ctx := r.Context()
+	user, _ := ctx.Value("user").(*store.User)
+
+	if err := app.store.Followers().Follow(ctx, followerUserID, user.ID); err != nil {
 		writeJSONError(app.logger, w, r, err)
 		return
 	}
@@ -100,16 +85,16 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 //	@Security		ApiKeyAuth
 //	@Router			/users/{userID}/unfollow [put]
 func (app *application) unfollowUserHandler(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	unfollowedUser, ok := ctx.Value("user").(*store.User)
-	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the user", http.StatusUnprocessableEntity))
+	unfollowedUserIDStr := chi.URLParam(r, "userID")
+	unfollowedUserID, err := strconv.ParseInt(unfollowedUserIDStr, 10, 64)
+	if err != nil {
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid user id", http.StatusBadRequest))
 		return
 	}
 
-	var userID int64 = 4 // Mock userID before auth
-	if err := app.store.Followers().Unfollow(ctx, unfollowedUser.ID, userID); err != nil {
+	ctx := r.Context()
+	user, _ := ctx.Value("user").(*store.User)
+	if err := app.store.Followers().Unfollow(ctx, unfollowedUserID, user.ID); err != nil {
 		writeJSONError(app.logger, w, r, err)
 		return
 	}

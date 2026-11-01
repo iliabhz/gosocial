@@ -65,3 +65,24 @@ func newMailConfig() *mailConfig {
 		expiry:    expiry,
 	}
 }
+
+type jwtConfig struct {
+	secret   string
+	audience string
+	issuer   string
+	expiry   time.Duration
+}
+
+func newJWTConfig() *jwtConfig {
+	expiry, err := time.ParseDuration(env.GetString("JWT_EXPIRY", "48h"))
+	if err != nil {
+		expiry = time.Hour * 24 * 2
+	}
+
+	return &jwtConfig{
+		secret:   env.GetString("JWT_SECRET", ""),
+		audience: env.GetString("JWT_AUDIENCE", "gosocial"),
+		issuer:   env.GetString("JWT_ISSUER", "gosocial"),
+		expiry:   expiry,
+	}
+}

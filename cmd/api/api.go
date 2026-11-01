@@ -64,9 +64,12 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 		//Public routes
 		r.Route("/authentication", func(r chi.Router) {
 			r.Post("/user", app.registerUserHandler(appCfg, mailCfg))
+			r.Post("/token", app.createTokenHandler)
 		})
 
 		r.Route("/posts", func(r chi.Router) {
+			r.Use(app.JWTAuthMiddleware)
+
 			r.Post("/", app.createPostHandler)
 
 			r.Route("/{postID}", func(r chi.Router) {
@@ -85,7 +88,8 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 			r.Put("/activate", app.activateUserHandler)
 
 			r.Route("/{userID}", func(r chi.Router) {
-				r.Use(app.UserCtx)
+				r.Use(app.JWTAuthMiddleware)
+
 				r.Get("/", app.getUserHandler)
 
 				r.Put("/follow", app.followUserHandler)
@@ -93,6 +97,7 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 			})
 
 			r.Group(func(r chi.Router) {
+				r.Use(app.JWTAuthMiddleware)
 				r.Get("/feed", app.getUserFeedHandler)
 			})
 		})

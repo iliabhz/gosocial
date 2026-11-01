@@ -3,13 +3,18 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
+	"time"
 	"uuid"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/iliabhz/gosocial/internal/mailer"
 	"github.com/iliabhz/gosocial/internal/store"
 )
+
+var ErrUnauthorized = errors.New("Unauthorized")
 
 type RegisterUserPayload struct {
 	Username string `json:"username" validate:"required,max=100"`
@@ -97,4 +102,70 @@ func (app *application) registerUserHandler(appCfg *appConfig, mailCfg *mailConf
 
 		writeJSON(w, http.StatusCreated, "User registered")
 	}
+}
+
+type CreateUserTokenPayload struct {
+	Email    string `json:"email" validate:"required,email,max=255"`
+	Password string `json:"password" validate:"required,min=3,max=72"`
+}
+
+// createTokenHandler godoc
+//
+//	@Summary		Creates a token
+//	@Description	Creates a token for a user
+//	@Tags			authentication
+//	@Accept			json
+//	@Produce		json
+//	@Param			payload	body		CreateUserTokenPayload	true	"User credentials"
+//	@Success		200		{string}	string					"Token"
+//	@Failure		400		{object}	error
+//	@Failure		401		{object}	error
+//	@Failure		500		{object}	error
+//	@Router			/authentication/token [post]
+func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Request) {
+	payload := CreateUserTokenPayload{}
+	if err := readJSON(w, r, &payload); err != nil {
+		writeJSONError(app.logger, w, r, NewHTTPError("Invalid json", http.StatusBadRequest))
+		return
+	}
+
+	if err := Validate.Struct(&payload); err != nil {
+		writeJSONError(app.logger, w, r, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	user, err := app.store.Users().GetByEmail(ctx, payload.Email)
+	if err != nil {
+		if errors.Is(err, store.ErrUserNotFound) {
+			// Returning a 404 Not Found would leak information about existence of emails
+			writeJSONError(app.logger, w, r, ErrUnauthorized)
+			return
+		}
+		// Internal server error
+		writeJSONError(app.logger, w, r, err)
+		return
+	}
+
+	if err := user.Password.Compare(payload.Password); err != nil {
+		writeJSONError(app.logger, w, r, ErrUnauthorized)
+		return
+	}
+
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(JWTAuth.exp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": JWTAuth.iss,
+		"aud": JWTAuth.aud,
+	}
+	token, err := JWTAuth.GenerateToken(claims)
+	if err != nil {
+		writeJSONError(app.logger, w, r, err)
+		return
+	}
+
+	writeDataJSON(w, http.StatusCreated, token)
 }
