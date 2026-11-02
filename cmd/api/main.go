@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/iliabhz/gosocial/db"
 	"github.com/iliabhz/gosocial/internal/mailer"
+	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
@@ -41,12 +42,20 @@ func main() {
 	dbCfg := newDBConfig()
 	mailCfg := newMailConfig()
 	jwtCfg := newJWTConfig()
+	cacheCfg := newCacheConfig()
 
 	if jwtCfg.secret == "" {
 		logger.Fatal("No JWT_SECRET was set in the environment variables")
 	}
 
-	store, err := db.NewDB(dbCfg.dsn)
+	var cacheStore cache.CacheStorage
+	redisCache := cache.NewRedisCacheStorage(cacheCfg.dsn)
+
+	if redisCache != nil {
+		cacheStore = redisCache
+	}
+
+	store, err := db.NewDB(dbCfg.dsn, cacheStore)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -55,7 +64,6 @@ func main() {
 	logger.Info("Database connection pool established")
 
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
-
 	JWTAuth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
 
 	app := newApplication(appCfg, store, mailer, logger)

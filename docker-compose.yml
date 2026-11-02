@@ -10,6 +10,14 @@ services:
       - db-data:/var/lib/postgresql
     ports:
       - "5432:5432"
+  
+  redis:
+    image: redis:8.10.3-alpine3.23@sha256:21090af93f8324db2f0f0f4f38a7c60369d47d917e000c3423d89d2ae2883537
+    restart: unless-stopped
+    container_name: gosocial-redis-db
+    ports:
+      - "6379:6379"
+    command: redis-server --protected-mode yes --requirepass "adminpass" --bind 0.0.0.0 --save 60 1 --loglevel warning
 
 volumes:
   db-data:

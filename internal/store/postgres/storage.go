@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,7 +20,7 @@ type PostgresStorage struct {
 	roleRepo     *PostgresRoleRepository
 }
 
-func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
+func NewPostgresStorage(dsn string, cache cache.CacheStorage) (*PostgresStorage, error) {
 	dbPool, err := newDBPool(dsn)
 	if err != nil {
 		return nil, err
@@ -29,7 +30,7 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 		dbPool:       dbPool,
 		postRepo:     newPostgresPostRepository(dbPool),
 		commentRepo:  newPostgresCommentRepository(dbPool),
-		userRepo:     newPostgresUserRepository(dbPool),
+		userRepo:     newPostgresUserRepository(dbPool, cache),
 		followerRepo: newPostgresFollwerRepository(dbPool),
 		roleRepo:     newPostgresRoleRepository(dbPool),
 	}, nil

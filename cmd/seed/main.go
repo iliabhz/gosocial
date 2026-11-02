@@ -15,7 +15,7 @@ func main() {
 	}
 
 	dsn := env.GetString("DB_DSN", "postgres://admin:adminpass@localhost/gosocial?sslmode=disable&pool_max_conns=30&pool_max_conn_idle_time=15m")
-	store, err := db.NewDB(dsn)
+	store, err := db.NewDB(dsn, nil)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

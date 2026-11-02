@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/iliabhz/gosocial/internal/store/postgres"
 )
 
@@ -14,7 +15,7 @@ var (
 	REDIS      = "redis"
 )
 
-func NewDB(dsn string) (store.Storage, error) {
+func NewDB(dsn string, cache cache.CacheStorage) (store.Storage, error) {
 	dbTypeStr := strings.Split(dsn, "://")[0]
 
 	var store store.Storage
@@ -22,7 +23,7 @@ func NewDB(dsn string) (store.Storage, error) {
 
 	switch dbTypeStr {
 	case POSTGRESQL:
-		store, err = postgres.NewPostgresStorage(dsn)
+		store, err = postgres.NewPostgresStorage(dsn, cache)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to initialize database: %w", err)
 		}

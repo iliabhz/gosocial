@@ -86,3 +86,14 @@ func newJWTConfig() *jwtConfig {
 		expiry:   expiry,
 	}
 }
+
+type cacheConfig struct {
+	dsn string
+}
+
+func newCacheConfig() *cacheConfig {
+	dsn := env.GetString("CACHE_DSN", "")
+	return &cacheConfig{
+		dsn: dsn,
+	}
+}
