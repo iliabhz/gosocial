@@ -100,11 +100,15 @@ func (repo *PostgresUserRepository) GetByEmail(ctx context.Context, email string
 func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User) error {
 	query := `
 	INSERT INTO users (username, password, email, role_id)
-	 VALUES ($1, $2, $3, $4) RETURNING id, created_at
+	 VALUES ($1, $2, $3, (SELECT id FROM roles WHERE name = $4)) RETURNING id, created_at
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
 	defer cancel()
+
+	if user.Role.Name == "" {
+		user.Role.Name = "user"
+	}
 
 	err := repo.dbPool.QueryRow(
 		ctx,
@@ -112,7 +116,7 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User
 		user.Username,
 		user.Password.Hash,
 		user.Email,
-		user.RoleID,
+		user.Role.Name,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
@@ -135,11 +139,15 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User
 func (repo *PostgresUserRepository) CreateTx(ctx context.Context, tx pgx.Tx, user *store.User) error {
 	query := `
 	INSERT INTO users (username, password, email, role_id)
-	 VALUES ($1, $2, $3, $4) RETURNING id, created_at
+	 VALUES ($1, $2, $3, (SELECT id FROM roles WHERE name = $4)) RETURNING id, created_at
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
 	defer cancel()
+
+	if user.Role.Name == "" {
+		user.Role.Name = "user"
+	}
 
 	err := tx.QueryRow(
 		ctx,
@@ -147,7 +155,7 @@ func (repo *PostgresUserRepository) CreateTx(ctx context.Context, tx pgx.Tx, use
 		user.Username,
 		user.Password.Hash,
 		user.Email,
-		user.RoleID,
+		user.Role.Name,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
