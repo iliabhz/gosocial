@@ -5,7 +5,6 @@ import (
 	"encoding/json/v2"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
@@ -80,7 +79,6 @@ func (s CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.
 		return nil, err
 	}
 
-	slog.Error("CACHE HIT")
 	return &user, nil
 }
 
