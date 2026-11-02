@@ -10,7 +10,7 @@ type Post struct {
 	Title     string    `json:"title"`
 	Content   string    `json:"content"`
 	UserID    int64     `json:"user_id"`
-	User      User      `json:"user"`
+	User      User      `json:"user,omitzero"`
 	Tags      []string  `json:"tags"`
 	Comments  []Comment `json:"comments"`
 	CreatedAt time.Time `json:"created_at"`
