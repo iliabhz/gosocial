@@ -119,36 +119,3 @@ func (app *application) RequirePostAccess(checks ...postAccessCheck) func(http.H
 		})
 	}
 }
-
-func (app *application) RolePrecedenceMiddleware(roleName string, next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		role, err := app.store.Roles().GetByName(ctx, roleName)
-		if err != nil {
-			writeJSONError(app.logger, w, r, err)
-			return
-		}
-		user, _ := ctx.Value("user").(*store.User)
-
-		if user.Role.Level >= role.Level {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-		writeJSONError(app.logger, w, r, ErrForbidden)
-	})
-}
-
-func (app *application) PostOwnershipMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		user, _ := ctx.Value("user").(*store.User)
-		post, _ := ctx.Value("post").(*store.Post)
-
-		if user.ID == post.UserID {
-			next.ServeHTTP(w, r)
-			return
-		}
-
-	})
-}
