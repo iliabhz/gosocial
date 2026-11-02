@@ -75,8 +75,15 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 			r.Route("/{postID}", func(r chi.Router) {
 				r.Use(app.PostCtx)
 				r.Get("/", app.getPostHandler)
-				r.With(app.RequirePostAccess(app.postOwnershipAccess, app.postRoleAtLeast("moderator"))).Patch("/", app.updatePostHandler)
-				r.With(app.RequirePostAccess(app.postOwnershipAccess, app.postRoleAtLeast("admin"))).Delete("/", app.deletePostHandler)
+
+				r.With(app.RequirePostAccess(
+					app.postOwnershipAccess,
+					app.postRoleAtLeast("moderator"),
+				)).Patch("/", app.updatePostHandler)
+
+				r.With(app.RequirePostAccess(
+					app.postOwnershipAccess, app.postRoleAtLeast("admin"),
+				)).Delete("/", app.deletePostHandler)
 
 				r.Route("/comments", func(r chi.Router) {
 					r.Post("/", app.createCommentHandler)
