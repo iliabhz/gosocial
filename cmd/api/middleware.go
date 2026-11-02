@@ -77,6 +77,49 @@ func (app *application) PostCtx(next http.Handler) http.Handler {
 	})
 }
 
+type postAccessCheck func(context.Context, *store.User, *store.Post) (bool, error)
+
+func (app *application) postOwnershipAccess(ctx context.Context, user *store.User, post *store.Post) (bool, error) {
+	return user.ID == post.UserID, nil
+}
+
+func (app *application) postRoleAtLeast(roleName string) postAccessCheck {
+	return func(ctx context.Context, user *store.User, post *store.Post) (bool, error) {
+		role, err := app.store.Roles().GetByName(ctx, roleName)
+		if err != nil {
+			return false, err
+		}
+
+		return user.Role.Level >= role.Level, nil
+	}
+}
+
+func (app *application) RequirePostAccess(checks ...postAccessCheck) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := r.Context()
+
+			user, _ := ctx.Value("user").(*store.User)
+			post, _ := ctx.Value("post").(*store.Post)
+
+			for _, check := range checks {
+				allowed, err := check(ctx, user, post)
+				if err != nil {
+					writeJSONError(app.logger, w, r, err)
+					return
+				}
+
+				if allowed {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			writeJSONError(app.logger, w, r, ErrForbidden)
+		})
+	}
+}
+
 func (app *application) RolePrecedenceMiddleware(roleName string, next http.HandlerFunc) http.HandlerFunc {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
