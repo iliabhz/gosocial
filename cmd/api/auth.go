@@ -15,6 +15,7 @@ import (
 )
 
 var ErrUnauthorized = errors.New("Unauthorized")
+var ErrForbidden = errors.New("Forbidden")
 
 type RegisterUserPayload struct {
 	Username string `json:"username" validate:"required,max=100"`

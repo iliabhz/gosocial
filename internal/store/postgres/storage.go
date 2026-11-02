@@ -16,6 +16,7 @@ type PostgresStorage struct {
 	commentRepo  *PostgresCommentRepository
 	userRepo     *PostgresUserRepository
 	followerRepo *PostgresFollowerRepository
+	roleRepo     *PostgresRoleRepository
 }
 
 func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
@@ -30,6 +31,7 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 		commentRepo:  newPostgresCommentRepository(dbPool),
 		userRepo:     newPostgresUserRepository(dbPool),
 		followerRepo: newPostgresFollwerRepository(dbPool),
+		roleRepo:     newPostgresRoleRepository(dbPool),
 	}, nil
 }
 
@@ -78,6 +80,10 @@ func (storage *PostgresStorage) Users() store.UserRepository {
 
 func (storage *PostgresStorage) Followers() store.FollowerRepository {
 	return storage.followerRepo
+}
+
+func (storage *PostgresStorage) Roles() store.RoleRepository {
+	return storage.roleRepo
 }
 
 func (storage *PostgresStorage) Close() {

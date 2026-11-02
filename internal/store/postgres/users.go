@@ -25,7 +25,10 @@ func newPostgresUserRepository(dbPool *pgxpool.Pool) *PostgresUserRepository {
 
 func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
 	query := `
-	SELECT id, username, email, password, is_active, created_at FROM users WHERE id = $1 AND is_active = true;
+	SELECT users.id, username, email, password, is_active, roles.id, roles.name, roles.level, roles.description, created_at
+	FROM users
+	JOIN roles ON (users.role_id = roles.id)
+	WHERE users.id = $1 AND is_active = true
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
@@ -43,12 +46,19 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (
 		&user.Email,
 		&user.Password.Hash,
 		&user.IsActive,
+		&user.Role.ID,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
 		&user.CreatedAt,
 	)
+	user.RoleID = user.Role.ID
 
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		return nil, store.ErrUserNotFound
+	case err != nil:
+		return nil, err
 	default:
 		return &user, err
 	}
@@ -80,6 +90,8 @@ func (repo *PostgresUserRepository) GetByEmail(ctx context.Context, email string
 	switch {
 	case errors.Is(err, pgx.ErrNoRows):
 		return nil, store.ErrUserNotFound
+	case err != nil:
+		return nil, err
 	default:
 		return &user, err
 	}
@@ -87,8 +99,8 @@ func (repo *PostgresUserRepository) GetByEmail(ctx context.Context, email string
 
 func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User) error {
 	query := `
-	INSERT INTO users (username, password, email)
-	 VALUES ($1, $2, $3) RETURNING id, created_at
+	INSERT INTO users (username, password, email, role_id)
+	 VALUES ($1, $2, $3, $4) RETURNING id, created_at
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
@@ -100,6 +112,7 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User
 		user.Username,
 		user.Password.Hash,
 		user.Email,
+		user.RoleID,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,
@@ -121,8 +134,8 @@ func (repo *PostgresUserRepository) Create(ctx context.Context, user *store.User
 
 func (repo *PostgresUserRepository) CreateTx(ctx context.Context, tx pgx.Tx, user *store.User) error {
 	query := `
-	INSERT INTO users (username, password, email)
-	 VALUES ($1, $2, $3) RETURNING id, created_at
+	INSERT INTO users (username, password, email, role_id)
+	 VALUES ($1, $2, $3, $4) RETURNING id, created_at
 	`
 
 	ctx, cancel := context.WithTimeout(ctx, store.QueryTimeoutDuration)
@@ -134,6 +147,7 @@ func (repo *PostgresUserRepository) CreateTx(ctx context.Context, tx pgx.Tx, use
 		user.Username,
 		user.Password.Hash,
 		user.Email,
+		user.RoleID,
 	).Scan(
 		&user.ID,
 		&user.CreatedAt,

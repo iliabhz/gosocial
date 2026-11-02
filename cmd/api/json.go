@@ -52,6 +52,8 @@ func writeJSONError(logger *zap.SugaredLogger, w http.ResponseWriter, r *http.Re
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "Resource not found"})
 	case errors.Is(err, ErrUnauthorized):
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "Unauthorized"})
+	case errors.Is(err, ErrForbidden):
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "Forbidden"})
 	case errors.Is(err, store.ErrAlreadyFollowing):
 		writeJSON(w, http.StatusConflict, map[string]string{"error": "Already following the user"})
 	case errors.Is(err, store.ErrNotFollowing):

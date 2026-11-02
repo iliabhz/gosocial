@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/iliabhz/gosocial/internal/store"
 )
 
 func (app *application) JWTAuthMiddleware(next http.Handler) http.Handler {
@@ -73,5 +74,38 @@ func (app *application) PostCtx(next http.Handler) http.Handler {
 
 		ctx := context.WithValue(r.Context(), "post", post)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func (app *application) RolePrecedenceMiddleware(roleName string, next http.HandlerFunc) http.HandlerFunc {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		role, err := app.store.Roles().GetByName(ctx, roleName)
+		if err != nil {
+			writeJSONError(app.logger, w, r, err)
+			return
+		}
+		user, _ := ctx.Value("user").(*store.User)
+
+		if user.Role.Level >= role.Level {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		writeJSONError(app.logger, w, r, ErrForbidden)
+	})
+}
+
+func (app *application) PostOwnershipMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		user, _ := ctx.Value("user").(*store.User)
+		post, _ := ctx.Value("post").(*store.Post)
+
+		if user.ID == post.UserID {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 	})
 }
