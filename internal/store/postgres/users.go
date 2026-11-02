@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
-	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,29 +15,15 @@ import (
 
 type PostgresUserRepository struct {
 	dbPool *pgxpool.Pool
-	cache  cache.CacheStorage
 }
 
-func newPostgresUserRepository(dbPool *pgxpool.Pool, cache cache.CacheStorage) *PostgresUserRepository {
+func newPostgresUserRepository(dbPool *pgxpool.Pool) *PostgresUserRepository {
 	return &PostgresUserRepository{
 		dbPool: dbPool,
-		cache:  cache,
 	}
 }
 
 func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
-	// Check for cache
-	if repo.cache != nil {
-		user, err := repo.cache.GetUser(ctx, userID)
-		if err != nil {
-			return nil, err
-		}
-
-		if user != nil {
-			return user, nil
-		}
-	}
-
 	query := `
 	SELECT users.id, username, email, password, is_active, roles.id, roles.name, roles.level, roles.description, created_at
 	FROM users
@@ -75,11 +60,6 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (
 	case err != nil:
 		return nil, err
 	default:
-		if repo.cache != nil {
-			if err := repo.cache.SetUser(ctx, &user); err != nil {
-				return nil, err
-			}
-		}
 		return &user, err
 	}
 }

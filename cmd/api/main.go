@@ -48,14 +48,7 @@ func main() {
 		logger.Fatal("No JWT_SECRET was set in the environment variables")
 	}
 
-	var cacheStore cache.CacheStorage
-	redisCache := cache.NewRedisCacheStorage(cacheCfg.dsn)
-
-	if redisCache != nil {
-		cacheStore = redisCache
-	}
-
-	store, err := db.NewDB(dbCfg.dsn, cacheStore)
+	store, err := db.NewDB(dbCfg.dsn)
 	if err != nil {
 		logger.Fatal(err)
 	}
@@ -63,10 +56,13 @@ func main() {
 
 	logger.Info("Database connection pool established")
 
+	cacheStore := cache.NewRedisCacheStorage(cacheCfg.dsn, store)
+	defer cacheStore.Close()
+
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
 	JWTAuth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
 
-	app := newApplication(appCfg, store, mailer, logger)
+	app := newApplication(appCfg, cacheStore, mailer, logger)
 
 	app.mount(appCfg, mailCfg)
 	logger.Fatal(app.run(appCfg))

@@ -3,10 +3,10 @@ package postgres
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
-	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,7 +20,7 @@ type PostgresStorage struct {
 	roleRepo     *PostgresRoleRepository
 }
 
-func NewPostgresStorage(dsn string, cache cache.CacheStorage) (*PostgresStorage, error) {
+func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	dbPool, err := newDBPool(dsn)
 	if err != nil {
 		return nil, err
@@ -30,7 +30,7 @@ func NewPostgresStorage(dsn string, cache cache.CacheStorage) (*PostgresStorage,
 		dbPool:       dbPool,
 		postRepo:     newPostgresPostRepository(dbPool),
 		commentRepo:  newPostgresCommentRepository(dbPool),
-		userRepo:     newPostgresUserRepository(dbPool, cache),
+		userRepo:     newPostgresUserRepository(dbPool),
 		followerRepo: newPostgresFollwerRepository(dbPool),
 		roleRepo:     newPostgresRoleRepository(dbPool),
 	}, nil
@@ -88,5 +88,6 @@ func (storage *PostgresStorage) Roles() store.RoleRepository {
 }
 
 func (storage *PostgresStorage) Close() {
+	slog.Error("CLOSINGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
 	storage.dbPool.Close()
 }
