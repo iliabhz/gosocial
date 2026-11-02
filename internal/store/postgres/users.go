@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"log/slog"
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
@@ -36,11 +35,9 @@ func (repo *PostgresUserRepository) GetByID(ctx context.Context, userID int64) (
 		}
 
 		if user != nil {
-			slog.Error("CACHE HIT")
 			return user, nil
 		}
 	}
-	slog.Error("CACHE MISS")
 
 	query := `
 	SELECT users.id, username, email, password, is_active, roles.id, roles.name, roles.level, roles.description, created_at
