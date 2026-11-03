@@ -28,7 +28,7 @@ func (app *application) JWTAuthMiddleware(next http.Handler) http.Handler {
 
 		token := parts[1]
 
-		jwtToken, err := JWTAuth.ValidateToken(token)
+		jwtToken, err := Auth.ValidateToken(token)
 		if err != nil {
 			writeJSONError(app.logger, w, r, ErrUnauthorized)
 			return

@@ -10,7 +10,7 @@ import (
 
 const version = "0.0.1"
 
-var JWTAuth *JWTAuthenticator
+var Auth Authenticator
 
 //	@title			GoSocial API
 //	@description	API for GoSocial which is a social network built in go
@@ -63,7 +63,7 @@ func main() {
 	defer cacheStore.Close()
 
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
-	JWTAuth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
+	Auth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
 
 	app := newApplication(appCfg, cacheStore, mailer, logger)
 

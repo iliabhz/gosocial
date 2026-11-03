@@ -157,15 +157,16 @@ func (app *application) createTokenHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	jwtAuth, _ := Auth.(*JWTAuthenticator)
 	claims := jwt.MapClaims{
 		"sub": user.ID,
-		"exp": time.Now().Add(JWTAuth.exp).Unix(),
+		"exp": time.Now().Add(jwtAuth.exp).Unix(),
 		"iat": time.Now().Unix(),
 		"nbf": time.Now().Unix(),
-		"iss": JWTAuth.iss,
-		"aud": JWTAuth.aud,
+		"iss": jwtAuth.iss,
+		"aud": jwtAuth.aud,
 	}
-	token, err := JWTAuth.GenerateToken(claims)
+	token, err := Auth.GenerateToken(claims)
 	if err != nil {
 		writeJSONError(app.logger, w, r, err)
 		return
