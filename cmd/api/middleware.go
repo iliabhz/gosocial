@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -77,15 +78,16 @@ func (app *application) PostCtx(next http.Handler) http.Handler {
 	})
 }
 
-type postAccessCheck func(context.Context, *store.User, *store.Post) (bool, error)
+type AccessCheck func(*http.Request) (bool, error)
 
-func (app *application) postOwnershipAccess(ctx context.Context, user *store.User, post *store.Post) (bool, error) {
-	return user.ID == post.UserID, nil
-}
+func (app *application) RoleAtLeast(minRole string) AccessCheck {
+	return func(r *http.Request) (bool, error) {
+		user, ok := r.Context().Value("user").(*store.User)
+		if !ok {
+			return false, errors.New("failed to get user from context")
+		}
 
-func (app *application) postRoleAtLeast(roleName string) postAccessCheck {
-	return func(ctx context.Context, user *store.User, post *store.Post) (bool, error) {
-		role, err := app.store.Roles().GetByName(ctx, roleName)
+		role, err := app.store.Roles().GetByName(r.Context(), minRole)
 		if err != nil {
 			return false, err
 		}
@@ -94,16 +96,30 @@ func (app *application) postRoleAtLeast(roleName string) postAccessCheck {
 	}
 }
 
-func (app *application) RequirePostAccess(checks ...postAccessCheck) func(http.Handler) http.Handler {
+func (app *application) PostOwner() AccessCheck {
+	return func(r *http.Request) (bool, error) {
+		ctx := r.Context()
+
+		user, ok := ctx.Value("user").(*store.User)
+		if !ok {
+			return false, errors.New("failed to get user from context")
+		}
+
+		post, ok := ctx.Value("post").(*store.Post)
+		if !ok {
+			return false, errors.New("failed to get post from context")
+		}
+
+		return user.ID == post.UserID, nil
+	}
+}
+
+func (app *application) RequireAny(checks ...AccessCheck) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ctx := r.Context()
-
-			user, _ := ctx.Value("user").(*store.User)
-			post, _ := ctx.Value("post").(*store.Post)
-
 			for _, check := range checks {
-				allowed, err := check(ctx, user, post)
+				allowed, err := check(r)
+
 				if err != nil {
 					writeJSONError(app.logger, w, r, err)
 					return
@@ -116,6 +132,28 @@ func (app *application) RequirePostAccess(checks ...postAccessCheck) func(http.H
 			}
 
 			writeJSONError(app.logger, w, r, ErrForbidden)
+		})
+	}
+}
+
+func (app *application) RequireAll(checks ...AccessCheck) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			for _, check := range checks {
+				allowed, err := check(r)
+
+				if err != nil {
+					writeJSONError(app.logger, w, r, err)
+					return
+				}
+
+				if !allowed {
+					writeJSONError(app.logger, w, r, ErrForbidden)
+					return
+				}
+			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
 }
