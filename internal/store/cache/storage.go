@@ -19,21 +19,21 @@ var roleCacheExp time.Duration
 type CacheStorage struct {
 	store.Storage
 
-	client *redis.Client
+	client Client
 	logger *zap.SugaredLogger
 }
 
 type CacheUserRepository struct {
 	store.UserRepository
 
-	client *redis.Client
+	client Client
 	logger *zap.SugaredLogger
 }
 
 type CacheRoleRepository struct {
 	store.RoleRepository
 
-	client *redis.Client
+	client Client
 	logger *zap.SugaredLogger
 }
 
@@ -43,16 +43,15 @@ func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, roleCacheEx
 		return dbStore, nil
 	}
 
-	opts, err := redis.ParseURL(dsn)
+	c, err := NewRedisClient(dsn)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to parse redis dsn: %w", err)
+		logger.Errorw("failed to initialize the redis client for caching", "error", err.Error())
+		return dbStore, nil
 	}
-
-	client := redis.NewClient(opts)
 
 	cStore := CacheStorage{
 		Storage: dbStore,
-		client:  client,
+		client:  c,
 		logger:  logger,
 	}
 
@@ -71,7 +70,7 @@ func (s *CacheStorage) Users() store.UserRepository {
 
 func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
 	key := fmt.Sprintf("user-%d", userID)
-	data, err := r.client.Get(ctx, key).Bytes()
+	data, err := r.client.Get(ctx, key)
 
 	if err == nil {
 		var user store.User
@@ -95,7 +94,7 @@ func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store
 		return user, nil
 	}
 
-	if err := r.client.Set(ctx, key, data, userCacheExp).Err(); err != nil {
+	if err := r.client.Set(ctx, key, data, userCacheExp); err != nil {
 		r.logger.Warnw("failed to cache user", "user_id", userID, "error", err.Error())
 	}
 
@@ -106,7 +105,7 @@ func (r *CacheUserRepository) Update(ctx context.Context, tx pgx.Tx, user *store
 	err := r.UserRepository.Update(ctx, tx, user)
 	if err != nil {
 		key := fmt.Sprintf("user-%d", user.ID)
-		if err := r.client.Del(ctx, key).Err(); err != nil {
+		if err := r.client.Delete(ctx, key); err != nil {
 			r.logger.Warn("failed to delete a user key for invalidation", "user_id", user.ID, "error", err.Error())
 		}
 		return nil
@@ -118,7 +117,7 @@ func (r *CacheUserRepository) Delete(ctx context.Context, userID int64) error {
 	err := r.UserRepository.Delete(ctx, userID)
 	if err != nil {
 		key := fmt.Sprintf("user-%d", userID)
-		if err := r.client.Del(ctx, key).Err(); err != nil {
+		if err := r.client.Delete(ctx, key); err != nil {
 			r.logger.Warn("failed to delete a user key for invalidation", "user_id", userID, "error", err.Error())
 		}
 		return nil
@@ -136,7 +135,7 @@ func (s *CacheStorage) Roles() store.RoleRepository {
 
 func (r *CacheRoleRepository) GetByName(ctx context.Context, name string) (*store.Role, error) {
 	key := fmt.Sprintf("role-%s", name)
-	data, err := r.client.Get(ctx, key).Bytes()
+	data, err := r.client.Get(ctx, key)
 
 	if err == nil {
 		var role store.Role
@@ -160,7 +159,7 @@ func (r *CacheRoleRepository) GetByName(ctx context.Context, name string) (*stor
 		return role, nil
 	}
 
-	if err := r.client.Set(ctx, key, data, roleCacheExp).Err(); err != nil {
+	if err := r.client.Set(ctx, key, data, roleCacheExp); err != nil {
 		r.logger.Warnw("failed to cache role", "role", name, "error", err.Error())
 	}
 
@@ -170,7 +169,7 @@ func (r *CacheRoleRepository) GetByName(ctx context.Context, name string) (*stor
 func (s *CacheStorage) Close() {
 	if s.client != nil {
 		if err := s.client.Close(); err != nil {
-			s.logger.Errorw("Failed to close the redis client", "error", err.Error())
+			s.logger.Errorw("Failed to close the cache client", "error", err.Error())
 		}
 	}
 	s.Storage.Close()
