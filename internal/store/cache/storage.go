@@ -9,79 +9,95 @@ import (
 
 	"github.com/iliabhz/gosocial/internal/store"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
-var UserCacheExpiry = time.Second * 10
+var userCacheExpiry = time.Second * 10
 
 type CacheStorage struct {
 	store.Storage
+
 	client *redis.Client
+	logger *zap.SugaredLogger
 }
 
 type CacheUserRepository struct {
 	store.UserRepository
+
 	client *redis.Client
-	store  *CacheStorage
+	logger *zap.SugaredLogger
 }
 
-// The DSN can be empty if you want to opt out of using a cache
-func NewRedisCacheStorage(dsn string, store store.Storage) *CacheStorage {
+// A empty DSN will opt out of caching and the original store would be returned
+func NewRedisCacheStorage(dsn string, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
+	if dsn == "" {
+		return dbStore, nil
+	}
+
 	opts, err := redis.ParseURL(dsn)
 	if err != nil {
-		return nil
+		return nil, fmt.Errorf("Failed to parse redis dsn: %w", err)
 	}
 
 	client := redis.NewClient(opts)
+
 	cStore := CacheStorage{
-		Storage: store,
+		Storage: dbStore,
 		client:  client,
+		logger:  logger,
 	}
 
-	return &cStore
+	return &cStore, nil
 }
 
 func (s *CacheStorage) Users() store.UserRepository {
 	return CacheUserRepository{
 		UserRepository: s.Storage.Users(),
 		client:         s.client,
-		store:          s,
+		logger:         s.logger,
 	}
 }
 
-func (s CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
+func (r CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
 	key := fmt.Sprintf("user-%d", userID)
-	data, err := s.client.Get(ctx, key).Result()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			// Cache Miss -> Caching
-			user, err := s.store.Storage.Users().GetByID(ctx, userID) // Delegate to the store impl
-			if err != nil {
-				return nil, err
-			}
-			data, err := json.Marshal(user)
-			if err != nil {
-				return nil, err
-			}
-			if err := s.client.Set(ctx, key, data, UserCacheExpiry).Err(); err != nil {
-				return nil, err
-			}
-			return user, nil
+	data, err := r.client.Get(ctx, key).Bytes()
+
+	if err == nil {
+		var user store.User
+
+		if err := json.Unmarshal(data, &user); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal cached user: %w", err)
 		}
+		r.logger.Info("CACHE HIT")
+		return &user, nil
+	} else if !errors.Is(err, redis.Nil) {
+		r.logger.Warnw("failed to get user from cache", "user_id", userID, "error", err.Error())
+	}
+	r.logger.Info("CACHE MISS")
+
+	user, err := r.UserRepository.GetByID(ctx, userID)
+	if err != nil {
 		return nil, err
 	}
 
-	if data == "" {
-		return nil, errors.New("The returned data on the cache for user was empty")
+	data, err = json.Marshal(user)
+	if err != nil {
+		r.logger.Warnw("failed to marshal user for cache", "error", err)
+		return user, nil
 	}
 
-	var user store.User
-	if err := json.Unmarshal([]byte(data), &user); err != nil {
-		return nil, err
+	if err := r.client.Set(ctx, key, data, userCacheExpiry).Err(); err != nil {
+		r.logger.Warnw("failed to cache user", "user_id", userID, "error", err.Error())
 	}
 
-	return &user, nil
+	return user, nil
 }
 
 func (s *CacheStorage) Close() {
-	s.client.Close()
+	if s.client != nil {
+		if err := s.client.Close(); err != nil {
+			s.logger.Errorw("Failed to close the redis client", "error", err.Error())
+		}
+	}
+	s.Storage.Close()
 }

@@ -52,11 +52,14 @@ func main() {
 	if err != nil {
 		logger.Fatal(err)
 	}
-	defer store.Close()
 
 	logger.Info("Database connection pool established")
 
-	cacheStore := cache.NewRedisCacheStorage(cacheCfg.dsn, store)
+	cacheStore, err := cache.NewRedisCacheStorage(cacheCfg.dsn, store, logger)
+	if err != nil {
+		cacheStore.Close()
+		logger.Fatal(err)
+	}
 	defer cacheStore.Close()
 
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
