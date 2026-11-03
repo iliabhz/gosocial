@@ -13,7 +13,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var userCacheExp = time.Second * 10
+var userCacheExp time.Duration
+var roleCacheExp time.Duration
 
 type CacheStorage struct {
 	store.Storage
@@ -29,8 +30,15 @@ type CacheUserRepository struct {
 	logger *zap.SugaredLogger
 }
 
+type CacheRoleRepository struct {
+	store.RoleRepository
+
+	client *redis.Client
+	logger *zap.SugaredLogger
+}
+
 // A empty DSN will opt out of caching and the original store would be returned
-func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
+func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, roleCacheExpiry time.Duration, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
 	if dsn == "" {
 		return dbStore, nil
 	}
@@ -49,6 +57,7 @@ func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, dbStore sto
 	}
 
 	userCacheExp = userCacheExpiry
+	roleCacheExp = roleCacheExpiry
 	return &cStore, nil
 }
 
@@ -93,7 +102,7 @@ func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store
 	return user, nil
 }
 
-func (r CacheUserRepository) Update(ctx context.Context, tx pgx.Tx, user *store.User) error {
+func (r *CacheUserRepository) Update(ctx context.Context, tx pgx.Tx, user *store.User) error {
 	err := r.UserRepository.Update(ctx, tx, user)
 	if err != nil {
 		key := fmt.Sprintf("user-%d", user.ID)
@@ -105,7 +114,7 @@ func (r CacheUserRepository) Update(ctx context.Context, tx pgx.Tx, user *store.
 	return err
 }
 
-func (r CacheUserRepository) Delete(ctx context.Context, userID int64) error {
+func (r *CacheUserRepository) Delete(ctx context.Context, userID int64) error {
 	err := r.UserRepository.Delete(ctx, userID)
 	if err != nil {
 		key := fmt.Sprintf("user-%d", userID)
@@ -115,6 +124,47 @@ func (r CacheUserRepository) Delete(ctx context.Context, userID int64) error {
 		return nil
 	}
 	return err
+}
+
+func (s *CacheStorage) Roles() store.RoleRepository {
+	return &CacheRoleRepository{
+		RoleRepository: s.Storage.Roles(),
+		client:         s.client,
+		logger:         s.logger,
+	}
+}
+
+func (r *CacheRoleRepository) GetByName(ctx context.Context, name string) (*store.Role, error) {
+	key := fmt.Sprintf("role-%s", name)
+	data, err := r.client.Get(ctx, key).Bytes()
+
+	if err == nil {
+		var role store.Role
+
+		if err := json.Unmarshal(data, &role); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal cached role: %w", err)
+		}
+		return &role, nil
+	} else if !errors.Is(err, redis.Nil) {
+		r.logger.Warnw("failed to get role from cache", "role_name", name, "error", err.Error())
+	}
+
+	role, err := r.RoleRepository.GetByName(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err = json.Marshal(role)
+	if err != nil {
+		r.logger.Warnw("failed to marshal role for cache", "error", err)
+		return role, nil
+	}
+
+	if err := r.client.Set(ctx, key, data, roleCacheExp).Err(); err != nil {
+		r.logger.Warnw("failed to cache role", "role", name, "error", err.Error())
+	}
+
+	return role, nil
 }
 
 func (s *CacheStorage) Close() {

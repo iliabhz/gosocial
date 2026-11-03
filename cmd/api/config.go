@@ -90,16 +90,25 @@ func newJWTConfig() *jwtConfig {
 type cacheConfig struct {
 	dsn             string
 	userCacheExpiry time.Duration
+	roleCacheExpiry time.Duration
 }
 
 func newCacheConfig() *cacheConfig {
 	dsn := env.GetString("CACHE_DSN", "")
-	expiry, err := time.ParseDuration(env.GetString("CACHE_USER_EXPIRY", "10s"))
+
+	userExp, err := time.ParseDuration(env.GetString("CACHE_USER_EXPIRY", "10s"))
 	if err != nil {
-		expiry = time.Second * 10
+		userExp = time.Second * 10
 	}
+
+	roleExp, err := time.ParseDuration(env.GetString("CACHE_ROLE_EXPIRY", "24h"))
+	if err != nil {
+		roleExp = time.Hour * 24
+	}
+
 	return &cacheConfig{
 		dsn:             dsn,
-		userCacheExpiry: expiry,
+		userCacheExpiry: userExp,
+		roleCacheExpiry: roleExp,
 	}
 }

@@ -55,7 +55,7 @@ func main() {
 
 	logger.Info("Database connection pool established")
 
-	cacheStore, err := cache.NewRedisCacheStorage(cacheCfg.dsn, cacheCfg.userCacheExpiry, store, logger)
+	cacheStore, err := cache.NewRedisCacheStorage(cacheCfg.dsn, cacheCfg.userCacheExpiry, cacheCfg.roleCacheExpiry, store, logger)
 	if err != nil {
 		cacheStore.Close()
 		logger.Fatal(err)
