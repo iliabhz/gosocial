@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var userCacheExpiry = time.Second * 10
+var userCacheExp = time.Second * 10
 
 type CacheStorage struct {
 	store.Storage
@@ -30,7 +30,7 @@ type CacheUserRepository struct {
 }
 
 // A empty DSN will opt out of caching and the original store would be returned
-func NewRedisCacheStorage(dsn string, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
+func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
 	if dsn == "" {
 		return dbStore, nil
 	}
@@ -48,6 +48,7 @@ func NewRedisCacheStorage(dsn string, dbStore store.Storage, logger *zap.Sugared
 		logger:  logger,
 	}
 
+	userCacheExp = userCacheExpiry
 	return &cStore, nil
 }
 
@@ -85,7 +86,7 @@ func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store
 		return user, nil
 	}
 
-	if err := r.client.Set(ctx, key, data, userCacheExpiry).Err(); err != nil {
+	if err := r.client.Set(ctx, key, data, userCacheExp).Err(); err != nil {
 		r.logger.Warnw("failed to cache user", "user_id", userID, "error", err.Error())
 	}
 

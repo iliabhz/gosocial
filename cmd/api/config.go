@@ -88,12 +88,18 @@ func newJWTConfig() *jwtConfig {
 }
 
 type cacheConfig struct {
-	dsn string
+	dsn             string
+	userCacheExpiry time.Duration
 }
 
 func newCacheConfig() *cacheConfig {
 	dsn := env.GetString("CACHE_DSN", "")
+	expiry, err := time.ParseDuration(env.GetString("CACHE_USER_EXPIRY", "10s"))
+	if err != nil {
+		expiry = time.Second * 10
+	}
 	return &cacheConfig{
-		dsn: dsn,
+		dsn:             dsn,
+		userCacheExpiry: expiry,
 	}
 }
