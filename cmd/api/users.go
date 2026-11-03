@@ -61,7 +61,7 @@ func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request
 	}
 
 	ctx := r.Context()
-	user, _ := ctx.Value("user").(*store.User)
+	user, _ := ctx.Value(userContextKey).(*store.User)
 
 	if err := app.store.Followers().Follow(ctx, followerUserID, user.ID); err != nil {
 		writeJSONError(app.logger, w, r, err)

@@ -13,6 +13,9 @@ import (
 	"github.com/iliabhz/gosocial/internal/store"
 )
 
+const userContextKey = "user"
+const postContextKey = "post"
+
 func (app *application) JWTAuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
@@ -73,7 +76,7 @@ func (app *application) PostCtx(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "post", post)
+		ctx := context.WithValue(r.Context(), postContextKey, post)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -82,7 +85,7 @@ type AccessCheck func(*http.Request) (bool, error)
 
 func (app *application) RoleAtLeast(minRole string) AccessCheck {
 	return func(r *http.Request) (bool, error) {
-		user, ok := r.Context().Value("user").(*store.User)
+		user, ok := r.Context().Value(userContextKey).(*store.User)
 		if !ok {
 			return false, errors.New("failed to get user from context")
 		}
@@ -100,12 +103,12 @@ func (app *application) PostOwner() AccessCheck {
 	return func(r *http.Request) (bool, error) {
 		ctx := r.Context()
 
-		user, ok := ctx.Value("user").(*store.User)
+		user, ok := ctx.Value(userContextKey).(*store.User)
 		if !ok {
 			return false, errors.New("failed to get user from context")
 		}
 
-		post, ok := ctx.Value("post").(*store.Post)
+		post, ok := ctx.Value(postContextKey).(*store.Post)
 		if !ok {
 			return false, errors.New("failed to get post from context")
 		}

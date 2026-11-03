@@ -24,7 +24,7 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	ctx := r.Context()
 
-	post, ok := ctx.Value("post").(*store.Post)
+	post, ok := ctx.Value(postContextKey).(*store.Post)
 	if !ok {
 		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
 		return
