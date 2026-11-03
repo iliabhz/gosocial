@@ -6,34 +6,34 @@ import (
 	"time"
 )
 
+type item struct {
+	value     []byte
+	expiresAt time.Time
+}
+
 type InMemoryClient struct {
-	kv  map[string][]byte
-	exp map[string]time.Time
+	kv map[string]item
 }
 
 func NewInMemoryClient() Client {
-	kv := make(map[string][]byte)
-	exp := make(map[string]time.Time)
+	kv := make(map[string]item)
 	return &InMemoryClient{
-		kv:  kv,
-		exp: exp,
+		kv: kv,
 	}
 }
 
 func (c *InMemoryClient) Get(ctx context.Context, key string) ([]byte, error) {
-	data, ok := c.kv[key]
+	item, ok := c.kv[key]
 	if !ok {
 		return nil, ValueNotFound
 	}
 
-	if exp, ok := c.exp[key]; ok {
-		if time.Now().After(exp) {
-			delete(c.kv, key)
-			delete(c.exp, key)
-			return nil, ValueNotFound
-		}
+	if !item.expiresAt.IsZero() && time.Now().After(item.expiresAt) {
+		delete(c.kv, key)
+		return nil, ValueNotFound
 	}
-	return data, nil
+
+	return item.value, nil
 }
 
 func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry time.Duration) error {
@@ -41,14 +41,21 @@ func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry 
 	if !ok {
 		return fmt.Errorf("couldn't convert the data to []byte")
 	}
-	c.kv[key] = data
-	c.exp[key] = time.Now().Add(expiry)
+	val := item{}
+	val.value = data
+
+	if expiry == 0 {
+		var time time.Time // Zero value of time so exp.IsZero() would be true
+		val.expiresAt = time
+	}
+	val.expiresAt = time.Now().Add(expiry)
+
+	c.kv[key] = val
 	return nil
 }
 
 func (c *InMemoryClient) Delete(ctx context.Context, key string) error {
 	delete(c.kv, key)
-	delete(c.exp, key)
 	return nil
 }
 
