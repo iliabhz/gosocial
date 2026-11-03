@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/iliabhz/gosocial/docs" // For swagger docs
+	"github.com/iliabhz/gosocial/internal/env"
 	"github.com/iliabhz/gosocial/internal/mailer"
 	"github.com/iliabhz/gosocial/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
@@ -40,20 +41,20 @@ func newApplication(cfg *appConfig, store store.Storage, mailer mailer.Client, l
 func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 	r := chi.NewRouter()
 
-	// Basic CORS
+	r.Use(middleware.RequestID)
+	r.Use(middleware.ClientIPFromRemoteAddr)
+	r.Use(middleware.Logger)
+	r.Use(middleware.Recoverer)
+
+	allowedOrigins := env.GetStringArray("CORS_ALLOWED_ORIGINS", []string{env.GetString("FRONTEND_URL", "http://localhost:4000")})
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://*", "http://*"},
+		AllowedOrigins:   allowedOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: false,
 		MaxAge:           300,
 	}))
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.ClientIPFromRemoteAddr)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
 
 	// Set a timeout value on the request context (ctx), that will signal
 	// through ctx.Done() that the request has timed out and further
