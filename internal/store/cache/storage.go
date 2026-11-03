@@ -9,7 +9,6 @@ import (
 
 	"github.com/iliabhz/gosocial/internal/store"
 	"github.com/jackc/pgx/v5"
-	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
 
@@ -60,6 +59,19 @@ func NewRedisCacheStorage(dsn string, userCacheExpiry time.Duration, roleCacheEx
 	return &cStore, nil
 }
 
+func NewInMemoryCacheStorage(userCacheExpiry time.Duration, roleCacheExpiry time.Duration, dbStore store.Storage, logger *zap.SugaredLogger) (store.Storage, error) {
+	c := NewInMemoryClient()
+
+	userCacheExp = userCacheExpiry
+	roleCacheExp = roleCacheExpiry
+
+	return &CacheStorage{
+		Storage: dbStore,
+		client:  c,
+		logger:  logger,
+	}, nil
+}
+
 func (s *CacheStorage) Users() store.UserRepository {
 	return &CacheUserRepository{
 		UserRepository: s.Storage.Users(),
@@ -79,7 +91,7 @@ func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store
 			return nil, fmt.Errorf("failed to unmarshal cached user: %w", err)
 		}
 		return &user, nil
-	} else if !errors.Is(err, redis.Nil) {
+	} else if !errors.Is(err, ValueNotFound) {
 		r.logger.Warnw("failed to get user from cache", "user_id", userID, "error", err.Error())
 	}
 
@@ -144,7 +156,7 @@ func (r *CacheRoleRepository) GetByName(ctx context.Context, name string) (*stor
 			return nil, fmt.Errorf("failed to unmarshal cached role: %w", err)
 		}
 		return &role, nil
-	} else if !errors.Is(err, redis.Nil) {
+	} else if !errors.Is(err, ValueNotFound) {
 		r.logger.Warnw("failed to get role from cache", "role_name", name, "error", err.Error())
 	}
 

@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -26,7 +27,11 @@ func NewRedisClient(dsn string) (Client, error) {
 }
 
 func (c *RedisClient) Get(ctx context.Context, key string) ([]byte, error) {
-	return c.client.Get(ctx, key).Bytes()
+	data, err := c.client.Get(ctx, key).Bytes()
+	if err != nil && errors.Is(err, redis.Nil) {
+		return nil, ValueNotFound
+	}
+	return data, err
 }
 
 func (c *RedisClient) Set(ctx context.Context, key string, value any, expiry time.Duration) error {

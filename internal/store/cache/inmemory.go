@@ -1,0 +1,55 @@
+package cache
+
+import (
+	"context"
+	"time"
+)
+
+type InMemoryClient struct {
+	kv  map[string][]byte
+	exp map[string]time.Time
+}
+
+func NewInMemoryClient() Client {
+	kv := make(map[string][]byte)
+	exp := make(map[string]time.Time)
+	return &InMemoryClient{
+		kv:  kv,
+		exp: exp,
+	}
+}
+
+func (c *InMemoryClient) Get(ctx context.Context, key string) ([]byte, error) {
+	data, ok := c.kv[key]
+	if !ok {
+		return nil, ValueNotFound
+	}
+
+	if exp, ok := c.exp[key]; ok {
+		if time.Now().After(exp) {
+			delete(c.kv, key)
+			delete(c.exp, key)
+			return nil, ValueNotFound
+		}
+	}
+	return data, nil
+}
+
+func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry time.Duration) error {
+	if _, ok := c.kv[key]; ok {
+		return KeyCollision
+	}
+
+	c.kv[key] = value.([]byte)
+	c.exp[key] = time.Now().Add(expiry)
+	return nil
+}
+
+func (c *InMemoryClient) Delete(ctx context.Context, key string) error {
+	delete(c.kv, key)
+	return nil
+}
+
+func (c *InMemoryClient) Close() error {
+	return nil
+}
