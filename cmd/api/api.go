@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -126,7 +131,35 @@ func (app *application) run(cfg *appConfig) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	app.logger.Infow("Server has started", "addr", cfg.addr, "env", app.env)
+	shutdown := make(chan error)
 
-	return srv.ListenAndServe()
+	go func() {
+		quit := make(chan os.Signal, 1)
+
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+		defer cancel()
+
+		app.logger.Infow("signal caught", "signal", s.String())
+
+		shutdown <- srv.Shutdown(ctx)
+	}()
+
+	app.logger.Infow("Server has started", "addr", cfg.addr, "env", app.env, "PID", os.Getpid())
+
+	err := srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.logger.Infow("server has stopped", "addr", cfg.addr, "env", app.env)
+
+	return nil
 }

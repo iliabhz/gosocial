@@ -68,5 +68,8 @@ func main() {
 	app := newApplication(appCfg, cacheStore, mailer, logger)
 
 	app.mount(appCfg, mailCfg)
-	logger.Fatal(app.run(appCfg))
+	err = app.run(appCfg)
+	if err != nil {
+		logger.Fatal(err)
+	}
 }
