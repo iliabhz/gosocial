@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"errors"
+	"expvar"
 	"fmt"
 	"net/http"
 	"os"
@@ -62,7 +63,12 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	r.Route("/v1", func(r chi.Router) {
-		r.With(app.JWTAuthMiddleware).Get("/health", app.healthCheckHandler)
+		r.With(app.JWTAuthMiddleware, app.RequireAll(
+			app.RoleAtLeast("admin"),
+		)).Get("/health", app.healthCheckHandler)
+		r.With(app.JWTAuthMiddleware, app.RequireAll(
+			app.RoleAtLeast("admin"),
+		)).Get("/debug/vars", expvar.Handler().ServeHTTP)
 
 		docsURL := fmt.Sprintf("%s/swagger/doc.json", appCfg.addr)
 		r.With(app.JWTAuthMiddleware).Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL(docsURL)))
