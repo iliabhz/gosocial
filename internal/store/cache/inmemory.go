@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"time"
 )
 
@@ -36,17 +37,18 @@ func (c *InMemoryClient) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry time.Duration) error {
-	if _, ok := c.kv[key]; ok {
-		return KeyCollision
+	data, ok := value.([]byte)
+	if !ok {
+		return fmt.Errorf("couldn't convert the data to []byte")
 	}
-
-	c.kv[key] = value.([]byte)
+	c.kv[key] = data
 	c.exp[key] = time.Now().Add(expiry)
 	return nil
 }
 
 func (c *InMemoryClient) Delete(ctx context.Context, key string) error {
 	delete(c.kv, key)
+	delete(c.exp, key)
 	return nil
 }
 
