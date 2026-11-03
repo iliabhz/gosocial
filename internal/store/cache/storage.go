@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
+	"github.com/jackc/pgx/v5"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 )
@@ -51,14 +52,14 @@ func NewRedisCacheStorage(dsn string, dbStore store.Storage, logger *zap.Sugared
 }
 
 func (s *CacheStorage) Users() store.UserRepository {
-	return CacheUserRepository{
+	return &CacheUserRepository{
 		UserRepository: s.Storage.Users(),
 		client:         s.client,
 		logger:         s.logger,
 	}
 }
 
-func (r CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
+func (r *CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.User, error) {
 	key := fmt.Sprintf("user-%d", userID)
 	data, err := r.client.Get(ctx, key).Bytes()
 
@@ -68,12 +69,10 @@ func (r CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.
 		if err := json.Unmarshal(data, &user); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal cached user: %w", err)
 		}
-		r.logger.Info("CACHE HIT")
 		return &user, nil
 	} else if !errors.Is(err, redis.Nil) {
 		r.logger.Warnw("failed to get user from cache", "user_id", userID, "error", err.Error())
 	}
-	r.logger.Info("CACHE MISS")
 
 	user, err := r.UserRepository.GetByID(ctx, userID)
 	if err != nil {
@@ -91,6 +90,30 @@ func (r CacheUserRepository) GetByID(ctx context.Context, userID int64) (*store.
 	}
 
 	return user, nil
+}
+
+func (r CacheUserRepository) Update(ctx context.Context, tx pgx.Tx, user *store.User) error {
+	err := r.UserRepository.Update(ctx, tx, user)
+	if err != nil {
+		key := fmt.Sprintf("user-%d", user.ID)
+		if err := r.client.Del(ctx, key).Err(); err != nil {
+			r.logger.Warn("failed to delete a user key for invalidation", "user_id", user.ID, "error", err.Error())
+		}
+		return nil
+	}
+	return err
+}
+
+func (r CacheUserRepository) Delete(ctx context.Context, userID int64) error {
+	err := r.UserRepository.Delete(ctx, userID)
+	if err != nil {
+		key := fmt.Sprintf("user-%d", userID)
+		if err := r.client.Del(ctx, key).Err(); err != nil {
+			r.logger.Warn("failed to delete a user key for invalidation", "user_id", userID, "error", err.Error())
+		}
+		return nil
+	}
+	return err
 }
 
 func (s *CacheStorage) Close() {
