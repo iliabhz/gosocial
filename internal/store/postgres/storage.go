@@ -3,7 +3,6 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/iliabhz/gosocial/internal/store"
@@ -88,6 +87,5 @@ func (storage *PostgresStorage) Roles() store.RoleRepository {
 }
 
 func (storage *PostgresStorage) Close() {
-	slog.Error("CLOSINGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
 	storage.dbPool.Close()
 }
