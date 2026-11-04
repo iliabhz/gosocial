@@ -37,3 +37,17 @@ func GetInt(key string, fallback int) int {
 
 	return valInt
 }
+
+func GetBool(key string, fallback bool) bool {
+	val, ok := os.LookupEnv(key)
+	if !ok {
+		return fallback
+	}
+
+	b, err := strconv.ParseBool(val)
+	if err != nil {
+		return fallback
+	}
+
+	return b
+}

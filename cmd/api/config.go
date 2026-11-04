@@ -112,3 +112,25 @@ func newCacheConfig() *cacheConfig {
 		roleCacheExpiry: roleExp,
 	}
 }
+
+type rateLimiterConfig struct {
+	requestsPerTimeFrame int
+	timeFrame            time.Duration
+	enabled              bool
+}
+
+func newRateLimiterConfig() *rateLimiterConfig {
+	enabled := env.GetBool("RATELIMITER_ENABLED", false)
+	rqpf := env.GetInt("RATELIMITER_REQUESTS_PER_TIME_FRAME", 100)
+
+	timeFrame, err := time.ParseDuration(env.GetString("RATELIMITER_TIMEFRAME", "1m"))
+	if err != nil {
+		timeFrame = time.Minute * 1
+	}
+
+	return &rateLimiterConfig{
+		requestsPerTimeFrame: rqpf,
+		timeFrame:            timeFrame,
+		enabled:              enabled,
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/go-playground/validator/v10"
+	"github.com/iliabhz/gosocial/internal/ratelimiter"
 	"github.com/iliabhz/gosocial/internal/store"
 	"go.uber.org/zap"
 )
@@ -44,6 +45,12 @@ func writeJSONError(logger *zap.SugaredLogger, w http.ResponseWriter, r *http.Re
 
 	if e, ok := errors.AsType[validator.ValidationErrors](err); ok {
 		writeJSON(w, http.StatusBadRequest, map[string]any{"errors": validationMessages(e)})
+		return
+	}
+
+	if e, ok := errors.AsType[ratelimiter.RateLimitErr](err); ok {
+		w.Header().Set("Retry-After", e.RetryAfter.String())
+		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": e.Error()})
 		return
 	}
 

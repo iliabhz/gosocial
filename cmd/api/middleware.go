@@ -9,7 +9,9 @@ import (
 	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/iliabhz/gosocial/internal/ratelimiter"
 	"github.com/iliabhz/gosocial/internal/store"
 )
 
@@ -159,4 +161,16 @@ func (app *application) RequireAll(checks ...AccessCheck) func(http.Handler) htt
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+func (app *application) RateLimiterMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if app.rateLimiter != nil {
+			if allow, retryAfter := app.rateLimiter.Allow(middleware.GetClientIP(r.Context())); !allow {
+				writeJSONError(app.logger, w, r, ratelimiter.RateLimitErr{RetryAfter: retryAfter})
+				return
+			}
+		}
+		next.ServeHTTP(w, r)
+	})
 }

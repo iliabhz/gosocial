@@ -17,25 +17,28 @@ import (
 	"github.com/iliabhz/gosocial/docs" // For swagger docs
 	"github.com/iliabhz/gosocial/internal/env"
 	"github.com/iliabhz/gosocial/internal/mailer"
+	"github.com/iliabhz/gosocial/internal/ratelimiter"
 	"github.com/iliabhz/gosocial/internal/store"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 	"go.uber.org/zap"
 )
 
 type application struct {
-	mux    http.Handler
-	store  store.Storage
-	mailer mailer.Client
-	logger *zap.SugaredLogger
-	env    string
+	mux         http.Handler
+	store       store.Storage
+	rateLimiter ratelimiter.Limiter
+	mailer      mailer.Client
+	logger      *zap.SugaredLogger
+	env         string
 }
 
-func newApplication(cfg *appConfig, store store.Storage, mailer mailer.Client, logger *zap.SugaredLogger) *application {
+func newApplication(cfg *appConfig, store store.Storage, ratelimiter ratelimiter.Limiter, mailer mailer.Client, logger *zap.SugaredLogger) *application {
 	return &application{
-		store:  store,
-		mailer: mailer,
-		logger: logger,
-		env:    cfg.env,
+		store:       store,
+		rateLimiter: ratelimiter,
+		mailer:      mailer,
+		logger:      logger,
+		env:         cfg.env,
 	}
 }
 
@@ -46,6 +49,7 @@ func (app *application) mount(appCfg *appConfig, mailCfg *mailConfig) {
 	r.Use(middleware.ClientIPFromRemoteAddr)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+	r.Use(app.RateLimiterMiddleware)
 
 	allowedOrigins := env.GetStringArray("CORS_ALLOWED_ORIGINS", []string{env.GetString("FRONTEND_URL", "http://localhost:4000")})
 	r.Use(cors.Handler(cors.Options{

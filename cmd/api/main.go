@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/iliabhz/gosocial/db"
 	"github.com/iliabhz/gosocial/internal/mailer"
+	"github.com/iliabhz/gosocial/internal/ratelimiter"
 	"github.com/iliabhz/gosocial/internal/store/cache"
 	"github.com/joho/godotenv"
 	"go.uber.org/zap"
@@ -43,6 +44,7 @@ func main() {
 	mailCfg := newMailConfig()
 	jwtCfg := newJWTConfig()
 	cacheCfg := newCacheConfig()
+	rateLimiterCfg := newRateLimiterConfig()
 
 	if jwtCfg.secret == "" {
 		logger.Fatal("No JWT_SECRET was set in the environment variables")
@@ -62,10 +64,15 @@ func main() {
 	}
 	defer cacheStore.Close()
 
+	var rateLim ratelimiter.Limiter
+	if rateLimiterCfg.enabled {
+		rateLim = ratelimiter.NewFixedWindwoRateLimiter(rateLimiterCfg.requestsPerTimeFrame, rateLimiterCfg.timeFrame)
+	}
+
 	mailer := mailer.NewMailGunMailer(logger, mailCfg.domain, mailCfg.fromEmail, mailCfg.mailGun.apiKey)
 	JWTAuth = NewJWTAuthenticator(jwtCfg.secret, jwtCfg.audience, jwtCfg.issuer, jwtCfg.expiry)
 
-	app := newApplication(appCfg, cacheStore, mailer, logger)
+	app := newApplication(appCfg, cacheStore, rateLim, mailer, logger)
 
 	app.mount(appCfg, mailCfg)
 	err = app.run(appCfg)
