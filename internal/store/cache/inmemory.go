@@ -3,6 +3,7 @@ package cache
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -13,6 +14,7 @@ type item struct {
 
 type InMemoryClient struct {
 	kv map[string]item
+	mu sync.Mutex
 }
 
 func NewInMemoryClient() Client {
@@ -23,6 +25,9 @@ func NewInMemoryClient() Client {
 }
 
 func (c *InMemoryClient) Get(ctx context.Context, key string) ([]byte, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
 	item, ok := c.kv[key]
 	if !ok {
 		return nil, ValueNotFound
@@ -37,25 +42,37 @@ func (c *InMemoryClient) Get(ctx context.Context, key string) ([]byte, error) {
 }
 
 func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry time.Duration) error {
+	if expiry < 0 {
+		return c.Delete(ctx, key)
+	}
+
 	data, ok := value.([]byte)
 	if !ok {
 		return fmt.Errorf("couldn't convert the data to []byte")
 	}
-	val := item{}
-	val.value = data
+	val := item{
+		value: data,
+	}
 
 	if expiry == 0 {
 		var time time.Time // Zero value of time so exp.IsZero() would be true
 		val.expiresAt = time
+	} else {
+		val.expiresAt = time.Now().Add(expiry)
 	}
-	val.expiresAt = time.Now().Add(expiry)
 
+	c.mu.Lock()
 	c.kv[key] = val
+	c.mu.Unlock()
+
 	return nil
 }
 
 func (c *InMemoryClient) Delete(ctx context.Context, key string) error {
+	c.mu.Lock()
 	delete(c.kv, key)
+	c.mu.Unlock()
+
 	return nil
 }
 
