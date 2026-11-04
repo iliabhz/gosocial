@@ -48,7 +48,7 @@ func writeJSONError(logger *zap.SugaredLogger, w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	if e, ok := errors.AsType[ratelimiter.RateLimitErr](err); ok {
+	if e, ok := errors.AsType[*ratelimiter.RateLimitErr](err); ok {
 		w.Header().Set("Retry-After", e.RetryAfter.String())
 		writeJSON(w, http.StatusTooManyRequests, map[string]any{"error": e.Error()})
 		return

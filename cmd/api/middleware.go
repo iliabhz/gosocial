@@ -167,7 +167,7 @@ func (app *application) RateLimiterMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if app.rateLimiter != nil {
 			if allow, retryAfter := app.rateLimiter.Allow(middleware.GetClientIP(r.Context())); !allow {
-				writeJSONError(app.logger, w, r, ratelimiter.RateLimitErr{RetryAfter: retryAfter})
+				writeJSONError(app.logger, w, r, &ratelimiter.RateLimitErr{RetryAfter: retryAfter})
 				return
 			}
 		}
