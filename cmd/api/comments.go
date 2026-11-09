@@ -30,16 +30,13 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	user := store.User{ // Mock the user before auth for now
-		ID:       1,
-		Username: "bob",
-	}
+	user, _ := ctx.Value(userContextKey).(*store.User)
 
 	comment := store.Comment{
 		PostID:  post.ID,
 		UserID:  user.ID,
 		Content: payload.Content,
-		User:    user,
+		User:    *user,
 	}
 
 	if err := app.store.Comments().Create(ctx, &comment); err != nil {

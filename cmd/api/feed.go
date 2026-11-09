@@ -63,8 +63,8 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 
 	ctx := r.Context()
 
-	var userID int64 = 16 // Mock userID before auth
-	feed, err := app.store.Posts().GetUserFeed(ctx, userID, pf, ff)
+	user, _ := ctx.Value(userContextKey).(*store.User)
+	feed, err := app.store.Posts().GetUserFeed(ctx, user.ID, pf, ff)
 	if err != nil {
 		writeJSONError(app.logger, w, r, err)
 		return
