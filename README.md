@@ -1,6 +1,8 @@
 # Go Social 
 A simple social netowrking app (mostly the backend for now) which is Built with Go + PostgresQL + Redis + Mailgun + JWT (For Auth)
 
+It uses a Repostiory pattern for handling storge which is in internal/store and has a postgres impl in internal/store/postgres. Also has a cache system which is implemented in internal/store/cache which has a both Redis impl and a InMemory impl.
+
 # GoSocial API
 
 
