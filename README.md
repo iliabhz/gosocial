@@ -3,6 +3,27 @@ A simple social netowrking app (mostly the backend for now) which is Built with 
 
 It uses a Repostiory pattern for handling storge which is in internal/store and has a postgres impl in internal/store/postgres. Also has a cache system which is implemented in internal/store/cache which has a both Redis impl and a InMemory impl.
 
+File structure:
+```
+├── bin
+├── cmd
+│   ├── api
+│   └── seed
+├── db
+│   └── migrations
+├── docs
+├── internal
+│   ├── env
+│   ├── mailer
+│   │   └── templates
+│   ├── ratelimiter
+│   └── store
+│       ├── cache
+│       └── postgres
+├── scripts
+└── web
+```
+
 # GoSocial API
 
 
