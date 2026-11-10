@@ -1,6 +1,10 @@
 # Go Social 
 A simple social netowrking app (mostly the backend for now) which is Built with Go + PostgresQL + Redis + Mailgun + JWT (For Auth)
 
+It's more like reddit where users can signup and then need to activate their account by clicking the link they get from a email sent to them. After that users can post somethings with a title, content, and tags which you can use to search posts from tags. Also users can comment on such posts and follow eachother to see their followers posts.
+
+Each user can delete and modify their own comments and posts and moderators can only modify other user comments and posts and the admins can both delete and modify other user comments and posts.
+
 It uses a Repostiory pattern for handling storge which is in internal/store and has a postgres impl in internal/store/postgres. Also has a cache system which is implemented in internal/store/cache which has a both Redis impl and a InMemory impl.
 
 File structure:
