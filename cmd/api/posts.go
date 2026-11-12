@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -36,7 +37,7 @@ func (app *application) getPostHandler(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	post, ok := ctx.Value(postContextKey).(*store.Post)
 	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, errors.New("Failed to get a post from the context"))
 		return
 	}
 
@@ -82,7 +83,7 @@ func (app *application) updatePostHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	post, ok := ctx.Value(postContextKey).(*store.Post)
 	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, errors.New("Failed to get a post from the context"))
 		return
 	}
 
@@ -163,7 +164,7 @@ func (app *application) deletePostHandler(w http.ResponseWriter, r *http.Request
 	ctx := r.Context()
 	post, ok := ctx.Value(postContextKey).(*store.Post)
 	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, errors.New("Failed to get a post from the context"))
 	}
 
 	err := app.store.Posts().DeleteByID(ctx, post.ID)

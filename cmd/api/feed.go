@@ -57,7 +57,7 @@ func (app *application) getUserFeedHandler(w http.ResponseWriter, r *http.Reques
 	}
 
 	if !ff.Since.IsZero() && !ff.Until.IsZero() && ff.Since.After(ff.Until) {
-		writeJSONError(app.logger, w, r, NewHTTPError("since date is after until date", http.StatusBadRequest))
+		writeJSONError(app.logger, w, r, NewHTTPError("Since date is after until date", http.StatusBadRequest))
 		return
 	}
 

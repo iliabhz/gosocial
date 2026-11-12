@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/iliabhz/gosocial/internal/store"
@@ -26,7 +27,7 @@ func (app *application) createCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	post, ok := ctx.Value(postContextKey).(*store.Post)
 	if !ok {
-		writeJSONError(app.logger, w, r, NewHTTPError("Couldn't process the post", http.StatusUnprocessableEntity))
+		writeJSONError(app.logger, w, r, errors.New("Failed to get a post from the context"))
 		return
 	}
 

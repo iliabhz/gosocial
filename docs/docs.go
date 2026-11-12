@@ -549,8 +549,8 @@ const docTemplate = `{
                         "description": "User not found",
                         "schema": {}
                     },
-                    "442": {
-                        "description": "Couldn't process the user",
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {}
                     }
                 }

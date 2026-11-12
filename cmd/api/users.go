@@ -49,7 +49,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 //	@Success		204		{string}	string	"User followed"
 //	@Failure		400		{object}	error	"User payload missing"
 //	@Failure		404		{object}	error	"User not found"
-//	@Failure		442		{object}	error	"Couldn't process the user"
+//	@Failure		500		{object}	error
 //	@Security		ApiKeyAuth
 //	@Router			/users/{userID}/follow [put]
 func (app *application) followUserHandler(w http.ResponseWriter, r *http.Request) {

@@ -48,7 +48,7 @@ func (c *InMemoryClient) Set(ctx context.Context, key string, value any, expiry 
 
 	data, ok := value.([]byte)
 	if !ok {
-		return fmt.Errorf("couldn't convert the data to []byte")
+		return fmt.Errorf("Couldn't convert the data to []byte")
 	}
 	val := item{
 		value: data,
